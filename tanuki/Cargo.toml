@@ -1,0 +1,16 @@
+[package]
+name = "tanuki"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+arbitrary = { version = "1.4.2", features = ["derive"] }
+arbitrary-int = { version = "2.0.0", features = ["arbitrary"] }
+capstone = "0.13.0"
+clap = { version = "4.5.35", features = ["derive"] }
+getrandom = "0.3.3"
+prettyplease = "0.2.37"
+
+[build-dependencies]
+tanuki-codegen = { path = "../tanuki-codegen" }

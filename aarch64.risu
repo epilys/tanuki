@@ -1,0 +1,3056 @@
+###############################################################################
+# Copyright (c) 2010 Linaro Limited
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Eclipse Public License v1.0
+# which accompanies this distribution, and is available at
+# http://www.eclipse.org/legal/epl-v10.html
+#
+# Contributors:
+#     Claudio Fontana - initial implementation
+#     based on arm.risu by Peter Maydell
+###############################################################################
+
+# Input file for risugen defining AArch64 instructions
+.mode arm.aarch64
+
+# from ARM DDI 0487A.a ARM Architecture Reference Manual
+# XXX NIY: branch, exception generation, system insns
+# XXX NIY: PC-related instructions
+# XXX NIY: SP-related instructions
+# XXX NIY: floating point and SIMD specific insns
+
+# Instruction suffixes to identify variants
+#   m - memory (loads/stores)
+#   s - scalar
+#   v - vector
+#   z - zero (e.g. compare to zero)
+#   f - fixed point
+#
+
+# - - - - 1 - 0 - - - - - - - - - - - - - - - Loads and stores
+# C3.3 Loads and stores
+
+# C3.3.1 AdvSIMD load/store multiple structures
+# C3.3.2 AdvSIMD load/store multiple structures (post-indexed)
+# C3.3.3 AdvSIMD load/store single structure
+# C3.3.4 AdvSIMD load/store single structure (post-indexed)
+#
+# C6.3.275 ST1 (multiple structures) - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  0  0  0  0  0  0  0  0  0  x  x  1  x size   Rn   Rt
+#                            [L]                  [  opcode  ]
+
+@Store
+
+ST1m_1 A64_V 0 Q:1 001100000 00000 0111 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1 << $size); reg($rn); }
+
+ST1m_2 A64_V 0 Q:1 001100000 00000 1010 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1 << $size); reg($rn); }
+
+ST1m_3 A64_V 0 Q:1 001100000 00000 0110 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1 << $size); reg($rn); }
+
+ST1m_4 A64_V 0 Q:1 001100000 00000 0010 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1 << $size); reg($rn); }
+
+# Post-index (reg/immediate)
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  0  1  0  0    Rm     x  x  1  x  size  Rn   Rt
+#                            [L]            [  opcode  ]
+
+ST1m_1p A64_V 0 Q:1 001100100 rm:5 0111 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1 << $size); reg($rn); }
+
+ST1m_2p A64_V 0 Q:1 001100100 rm:5 1010 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1 << $size); reg($rn); }
+
+ST1m_3p A64_V 0 Q:1 001100100 rm:5 0110 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1 << $size); reg($rn); }
+
+ST1m_4p A64_V 0 Q:1 001100100 rm:5 0010 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1 << $size); reg($rn); }
+
+# C6.3.276 ST1 (single structure) - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  0  0  0  0  0  0  0  0  x  x  0  S  size  Rn   Rt
+#                            [L][R]               [  opc  ]
+#              8-bit variant (opcode = 000)
+#    ST1 { <Vt>.B }[<index>], [<Xn|SP>]
+#              16-bit variant (opcode = 010, size = x0)
+#    ST1 { <Vt>.H }[<index>], [<Xn|SP>]
+#              32-bit variant (opcode = 100, size = 00)
+#    ST1 { <Vt>.S }[<index>], [<Xn|SP>]
+#              64-bit variant (opcode = 100, S = 0, size = 01)
+#    ST1 { <Vt>.D }[<index>], [<Xn|SP>]
+
+ST1_B A64_V 0 Q:1 001101000 00000 000 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1); reg($rn); }
+
+ST1_H A64_V 0 Q:1 001101000 00000 010 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && !(($size & 0x01) > 0); } \
+!memory { align(2); reg($rn); }
+
+# ReservedValue: break !(size & 0x01) constraint
+ST1_H_RES A64_V 0 Q:1 001101000 00000 010 S:1 size:1 1 rn:5 rt:5
+
+ST1_S A64_V 0 Q:1 001101000 00000 100 S:1 00 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(4); reg($rn); }
+
+ST1_D A64_V 0 Q:1 001101000 00000 100 0 01 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(8); reg($rn); }
+
+# Post-index (reg/immediate)
+#  31 30 29 28 27 26 25 24 23 22 21 20    16 15 14 13 12 11 10 9  5 4  0
+#   0  Q  0  0  1  1  0  1  1  0  0    Rm     x  x  0  S size   Rn   Rt
+#                             [L][R]          opcode
+
+ST1_Bp A64_V 0 Q:1 001101100 rm:5 000 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1); reg($rn); }
+
+ST1_Hp A64_V 0 Q:1 001101100 rm:5 010 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm && !(($size & 0x01) > 0); } \
+!memory { align(2); reg($rn); }
+
+# ReservedValue: break (!size & 0x01) constraint
+ST1_Hp_RES A64_V 0 Q:1 001101100 rm:5 010 S:1 size:1 1 rn:5 rt:5
+
+ST1_Sp A64_V 0 Q:1 001101100 rm:5 100 S:1 00 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(4); reg($rn); }
+
+ST1_Dp A64_V 0 Q:1 001101100 rm:5 100 0 01 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(8); reg($rn); }
+
+# C6.3.277 ST2 (multiple structures) - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  0  0  0  0  0  0  0  0  0  1  0  0  0  size  Rn   Rt
+#                            [L]                  [  opcode  ]
+
+ST2m A64_V 0 Q:1 001100000 00000 1000 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && !($size == 3 && $Q == 0); } \
+!memory { align(1 << $size); reg($rn); }
+
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+ST2m_RES A64_V 0 0 001100000 00000 1000 11 rn:5 rt:5
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20          16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  0  1  0  0       Rm        1  0  0  0  size  Rn   Rt
+#                            [L]                  [  opcode  ]
+
+ST2m_p A64_V 0 Q:1 001100100 rm:5 1000 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm && !($size == 3 && $Q == 0); } \
+!memory { align(1 << $size); reg($rn); }
+
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+ST2m_p_RES A64_V 0 0 001100100 rm:5 1000 11 rn:5 rt:5
+
+# C6.3.278 ST2 (single structure) - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  0  0  1  0  0  0  0  0  x  x  0  S  size  Rn   Rt
+#                            [L][R]               [  opc  ]
+
+ST2_B A64_V 0 Q:1 001101001 00000 000 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1); reg($rn); }
+
+ST2_H A64_V 0 Q:1 001101001 00000 010 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && !(($size & 0x01) > 0); } \
+!memory { align(2); reg($rn); }
+
+# ReservedValue: break the !($size & 0x01) constraint
+ST2_H_RES A64_V 0 Q:1 001101001 00000 010 S:1 size:1 1 rn:5 rt:5
+
+ST2_S A64_V 0 Q:1 001101001 00000 100 S:1 00 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(4); reg($rn); }
+
+ST2_D A64_V 0 Q:1 001101001 00000 100 0 01 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(8); reg($rn); }
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  1  0  1    Rm     x  x  0  S  size  Rn   Rt
+#                            [L][R]         [  opc  ]
+
+ST2_Bp A64_V 0 Q:1 001101101 rm:5 000 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1); reg($rn); }
+
+ST2_Hp A64_V 0 Q:1 001101101 rm:5 010 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm && !(($size & 0x01) > 0); } \
+!memory { align(2); reg($rn); }
+
+# ReservedValue: break the !($size & 0x01) constraint
+ST2_Hp_RES A64_V 0 Q:1 001101101 rm:5 010 S:1 size:1 1 rn:5 rt:5
+
+ST2_Sp A64_V 0 Q:1 001101101 rm:5 100 S:1 00 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(4); reg($rn); }
+
+ST2_Dp A64_V 0 Q:1 001101101 rm:5 100 0 01 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(8); reg($rn); }
+
+# C6.3.279 ST3 (multiple structures) - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  0  0  0  0  0  0  0  0  0  0  1  0  0  size  Rn   Rt
+#                            [L]                  [  opcode  ]
+ST3m A64_V 0 Q:1 001100000 00000 0100 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && !($size == 3 && $Q == 0); } \
+!memory { align(1 << $size); reg($rn); }
+
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+ST3m_RES A64_V 0 0 001100000 00000 0100 11 rn:5 rt:5
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20          16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  0  1  0  0       Rm        0  1  0  0  size  Rn   Rt
+#                            [L]                  [  opcode  ]
+
+ST3m_p A64_V 0 Q:1 001100100 rm:5 0100 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rm != $rn && !($size == 3 && $Q == 0); } \
+!memory { align(1 << $size); reg($rn); }
+
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+ST3m_p_RES A64_V 0 0 001100100 rm:5 0100 11 rn:5 rt:5
+
+# C6.3.280 ST3 (single structure) - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  0  0  0  0  0  0  0  0  x  x  1  S  size  Rn   Rt
+#                            [L][R]               [  opc  ]
+
+ST3_B A64_V 0 Q:1 001101000 00000 001 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1); reg($rn); }
+
+ST3_H A64_V 0 Q:1 001101000 00000 011 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && !(($size & 0x01) > 0); } \
+!memory { align(2); reg($rn); }
+
+# ReservedValue: break the !($size & 0x01) constraint
+ST3_H_RES A64_V 0 Q:1 001101000 00000 011 S:1 size:1 1 rn:5 rt:5
+
+ST3_S A64_V 0 Q:1 001101000 00000 101 S:1 00 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(4); reg($rn); }
+
+ST3_D A64_V 0 Q:1 001101000 00000 101 0 01 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(8); reg($rn); }
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  1  0  0    Rm     x  x  1  S  size  Rn   Rt
+#                            [L][R]         [  opc  ]
+
+ST3_Bp A64_V 0 Q:1 001101100 rm:5 001 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1); reg($rn); }
+
+ST3_Hp A64_V 0 Q:1 001101100 rm:5 011 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm && !(($size & 0x01) > 0); } \
+!memory { align(2); reg($rn); }
+
+# ReservedValue: break the !($size & 0x01) constraint
+ST3_Hp_RES A64_V 0 Q:1 001101100 rm:5 011 S:1 size:1 1 rn:5 rt:5
+
+ST3_Sp A64_V 0 Q:1 001101100 rm:5 101 S:1 00 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(4); reg($rn); }
+
+ST3_Dp A64_V 0 Q:1 001101100 rm:5 101 0 01 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(8); reg($rn); }
+
+# C6.3.281 ST4 (multiple structures) - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  size  Rn   Rt
+#                            [L]                  [  opcode  ]
+
+ST4m A64_V 0 Q:1 001100000 00000 0000 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && !($size == 3 && $Q == 0); } \
+!memory { align(1 << $size); reg($rn); }
+
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+ST4m_RES A64_V 0 0 001100000 00000 0000 11 rn:5 rt:5
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20  16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  0  1  0  0   Rm    0  0  0  0  size  Rn   Rt
+#                            [L]          [  opcode  ]
+
+ST4m_p A64_V 0 Q:1 001100100 rm:5 0000 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rm != $rn && !($size == 3 && $Q == 0); } \
+!memory { align(1 << $size); reg($rn); }
+
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+ST4m_p_RES A64_V 0 0 001100100 rm:5 0000 11 rn:5 rt:5
+
+# C6.3.282 ST4 (single structure) - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  0  0  1  0  0  0  0  0  x  x  1  S  size  Rn   Rt
+#                            [L][R]               [  opc  ]
+
+ST4_B A64_V 0 Q:1 001101001 00000 001 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1); reg($rn); }
+
+ST4_H A64_V 0 Q:1 001101001 00000 011 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && !(($size & 0x01) > 0); } \
+!memory { align(2); reg($rn); }
+
+# ReservedValue: break the !($size & 0x01) constraint
+ST4_H_RES A64_V 0 Q:1 001101001 00000 011 S:1 size:1 1 rn:5 rt:5
+
+ST4_S A64_V 0 Q:1 001101001 00000 101 S:1 00 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(4); reg($rn); }
+
+ST4_D A64_V 0 Q:1 001101001 00000 101 0 01 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(8); reg($rn); }
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  1  0  1    Rm     x  x  1  S  size  Rn   Rt
+#                            [L][R]         [  opc  ]
+
+ST4_Bp A64_V 0 Q:1 001101101 rm:5 001 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1); reg($rn); }
+
+ST4_Hp A64_V 0 Q:1 001101101 rm:5 011 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm && !(($size & 0x01) > 0); } \
+!memory { align(2); reg($rn); }
+
+# ReservedValue: break the !($size & 0x01) constraint
+ST4_Hp_RES A64_V 0 Q:1 001101101 rm:5 011 S:1 size:1 1 rn:5 rt:5
+
+ST4_Sp A64_V 0 Q:1 001101101 rm:5 101 S:1 00 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(4); reg($rn); }
+
+ST4_Dp A64_V 0 Q:1 001101101 rm:5 101 0 01 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(8); reg($rn); }
+
+@
+# C6.3.152 LD1 (multiple structures) - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  0  0  1  0  0  0  0  0  0  x  x  1  x  size  Rn   Rt
+#                            [L]                  [  opcode  ]
+@Load
+
+LD1m_1 A64_V 0 Q:1 001100010 00000 0111 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1 << $size); reg($rn); }
+
+LD1m_2 A64_V 0 Q:1 001100010 00000 1010 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1 << $size); reg($rn); }
+
+LD1m_3 A64_V 0 Q:1 001100010 00000 0110 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1 << $size); reg($rn); }
+
+LD1m_4 A64_V 0 Q:1 001100010 00000 0010 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1 << $size); reg($rn); }
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  0  1  1  0    Rm     x  x  1  x  size  Rn   Rt
+#                            [L]            [  opcode  ]
+
+LD1m_1p A64_V 0 Q:1 001100110 rm:5 0111 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1 << $size); reg($rn); }
+
+LD1m_2p A64_V 0 Q:1 001100110 rm:5 1010 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1 << $size); reg($rn); }
+
+LD1m_3p A64_V 0 Q:1 001100110 rm:5 0110 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1 << $size); reg($rn); }
+
+LD1m_4p A64_V 0 Q:1 001100110 rm:5 0010 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1 << $size); reg($rn); }
+
+# C6.3.153 LD1 (single structure) - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  0  1  0  0  0  0  0  0  x  x  0  S  size  Rn   Rt
+#                            [L][R]               [  opc  ]
+
+LD1_B A64_V 0 Q:1 001101010 00000 000 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1); reg($rn); }
+
+LD1_H A64_V 0 Q:1 001101010 00000 010 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && !(($size & 0x01) > 0); } \
+!memory { align(2); reg($rn); }
+
+# ReservedValue: break the !($size & 0x01) constraint
+LD1_H_RES A64_V 0 Q:1 001101010 00000 010 S:1 size:1 1 rn:5 rt:5
+
+LD1_S A64_V 0 Q:1 001101010 00000 100 S:1 00 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(4); reg($rn); }
+
+LD1_D A64_V 0 Q:1 001101010 00000 100 0 01 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(8); reg($rn); }
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  1  1  0    Rm     x  x  0  S  size  Rn   Rt
+#                            [L][R]         [  opc  ]
+
+LD1_Bp A64_V 0 Q:1 001101110 rm:5 000 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1); reg($rn); }
+
+LD1_Hp A64_V 0 Q:1 001101110 rm:5 010 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm && !(($size & 0x01) > 0); } \
+!memory { align(2); reg($rn); }
+
+# ReservedValue: break the !($size & 0x01) constraint
+LD1_Hp_RES A64_V 0 Q:1 001101110 rm:5 010 S:1 size:1 1 rn:5 rt:5
+
+LD1_Sp A64_V 0 Q:1 001101110 rm:5 100 S:1 00 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(4); reg($rn); }
+
+LD1_Dp A64_V 0 Q:1 001101110 rm:5 100 0 01 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(8); reg($rn); }
+
+
+# C6.3.154 LD1R - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  0  1  0  0  0  0  0  0  1  1  0  0  size  Rn   Rt
+#                            [L][R]               [  opc  ][S]
+
+LD1R A64_V 0 Q:1 001101010 00000 110 0 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1 << $size); reg($rn); }
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20  16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  1  1  0   Rm    1  1  0  0  size  Rn   Rt
+#                            [L][R]       [  opc  ][S]
+
+LD1R_p A64_V 0 Q:1 001101110 rm:5 110 0 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1 << $size); reg($rn); }
+
+# C6.3.155 LD2 (multiple structures) - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  0  0  1  0  0  0  0  0  0  1  0  0  0  size  Rn   Rt
+#                            [L]                  [  opcode  ]
+
+LD2m A64_V 0 Q:1 001100010 00000 1000 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && !($size == 3 && $Q == 0); } \
+!memory { align(1 << $size); reg($rn); }
+
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+LD2m_RES A64_V 0 0 001100010 00000 1000 11 rn:5 rt:5
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20  16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  0  1  1  0   Rm    1  0  0  0  size  Rn   Rt
+#                            [L]          [  opcode  ]
+
+LD2m_p A64_V 0 Q:1 001100110 rm:5 1000 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm && !($size == 3 && $Q == 0); } \
+!memory { align(1 << $size); reg($rn); }
+
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+LD2m_p_RES A64_V 0 0 001100110 rm:5 1000 11 rn:5 rt:5
+
+# C6.3.156 LD2 (single structure) - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  0  1  1  0  0  0  0  0  x  x  0  S  size  Rn   Rt
+#                            [L][R]               [  opc  ]
+
+LD2_B A64_V 0 Q:1 001101011 00000 000 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1); reg($rn); }
+
+LD2_H A64_V 0 Q:1 001101011 00000 010 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && !(($size & 0x01) > 0); } \
+!memory { align(2); reg($rn); }
+
+# ReservedValue: break the !($size & 0x01) constraint
+LD2_H_RES A64_V 0 Q:1 001101011 00000 010 S:1 size:1 1 rn:5 rt:5
+
+LD2_S A64_V 0 Q:1 001101011 00000 100 S:1 00 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(4); reg($rn); }
+
+LD2_D A64_V 0 Q:1 001101011 00000 100 0 01 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(8); reg($rn); }
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20  16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  1  1  1   Rm    x  x  0  S  size  Rn   Rt
+#                            [L][R]       [  opc  ]
+
+LD2_Bp A64_V 0 Q:1 001101111 rm:5 000 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1); reg($rn); }
+
+LD2_Hp A64_V 0 Q:1 001101111 rm:5 010 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm && !(($size & 0x01) > 0); } \
+!memory { align(2); reg($rn); }
+
+# ReservedValue: break the !($size & 0x01) constraint
+LD2_Hp_RES A64_V 0 Q:1 001101111 rm:5 010 S:1 size:1 1 rn:5 rt:5
+
+LD2_Sp A64_V 0 Q:1 001101111 rm:5 100 S:1 00 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(4); reg($rn); }
+
+LD2_Dp A64_V 0 Q:1 001101111 rm:5 100 0 01 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(8); reg($rn); }
+
+# C6.3.157 LD2R - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  0  1  1  0  0  0  0  0  1  1  0  0  size  Rn   Rt
+#                            [L][R]               [  opc  ] S
+
+LD2R A64_V 0 Q:1 001101011 00000 110 0 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1 << $size); reg($rn); }
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  1  1  1    Rm     1  1  0  0  size  Rn   Rt
+#                            [L][R]         [  opc  ] S
+
+LD2R_p A64_V 0 Q:1 001101111 rm:5 110 0 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1 << $size); reg($rn); }
+
+# C6.3.158 LD3 (multiple structures) - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  0  0  1  0  0  0  0  0  0  0  1  0  0  size  Rn   Rt
+#                            [L]                  [  opcode  ]
+
+LD3m A64_V 0 Q:1 001100010 00000 0100 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && !($size == 3 && $Q == 0); } \
+!memory { align(1 << $size); reg($rn); }
+
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+LD3m_RES A64_V 0 0 001100010 00000 0100 11 rn:5 rt:5
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  0  1  1  0    Rm     0  1  0  0  size  Rn   Rt
+#                            [L]            [  opcode  ]
+
+LD3m_p A64_V 0 Q:1 001100110 rm:5 0100 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm && !($size == 3 && $Q == 0); } \
+!memory { align(1 << $size); reg($rn); }
+
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+LD3m_p_RES A64_V 0 0 001100110 rm:5 0100 11 rn:5 rt:5
+
+# C6.3.159 LD3 (single structure) - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  0  1  0  0  0  0  0  0  x  x  1  S  size  Rn   Rt
+#                            [L][R]               [  opc  ]
+
+LD3_B A64_V 0 Q:1 001101010 00000 001 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1); reg($rn); }
+
+LD3_H A64_V 0 Q:1 001101010 00000 011 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && !(($size & 0x01) > 0); } \
+!memory { align(2); reg($rn); }
+
+# ReservedValue: break the !($size & 0x01) constraint
+LD3_H_RES A64_V 0 Q:1 001101010 00000 011 S:1 size:1 1 rn:5 rt:5
+
+LD3_S A64_V 0 Q:1 001101010 00000 101 S:1 00 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(4); reg($rn); }
+
+LD3_D A64_V 0 Q:1 001101010 00000 101 0 01 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(8); reg($rn); }
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  1  1  0    Rm     x  x  1  S  size  Rn   Rt
+#                            [L][R]         [  opc  ]
+
+LD3_Bp A64_V 0 Q:1 001101110 rm:5 001 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1); reg($rn); }
+
+LD3_Hp A64_V 0 Q:1 001101110 rm:5 011 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm && !(($size & 0x01) > 0); } \
+!memory { align(2); reg($rn); }
+
+LD3_Hp_RES A64_V 0 Q:1 001101110 rm:5 011 S:1 size:1 1 rn:5 rt:5
+
+LD3_Sp A64_V 0 Q:1 001101110 rm:5 101 S:1 00 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(4); reg($rn); }
+
+LD3_Dp A64_V 0 Q:1 001101110 rm:5 101 0 01 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(8); reg($rn); }
+
+# C6.3.160 LD3R - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  0  1  0  0  0  0  0  0  1  1  1  0  size  Rn   Rt
+#                            [L][R]               [  opc  ] S
+
+LD3R A64_V 0 Q:1 001101010 00000 111 0 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1 << $size); reg($rn); }
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  1  1  0    Rm     1  1  1  0  size  Rn   Rt
+#                            [L][R]         [  opc  ] S
+
+LD3R_p A64_V 0 Q:1 001101110 rm:5 111 0 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1 << $size); reg($rn); }
+
+# C6.3.161 LD4 (multiple structures) - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  0  0  1  0  0  0  0  0  0  0  0  0  0  size  Rn   Rt
+#                            [L]                  [  opcode  ]
+
+LD4m A64_V 0 Q:1 001100010 00000 0000 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && !($size == 3 && $Q == 0); } \
+!memory { align(1 << $size); reg($rn); }
+
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+LD4m_RES A64_V 0 0 001100010 00000 0000 11 rn:5 rt:5
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  0  1  1  0    Rm     0  0  0  0  size  Rn   Rt
+#                            [L]            [  opcode  ]
+
+LD4m_p A64_V 0 Q:1 001100110 rm:5 0000 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm && !($size == 3 && $Q == 0); } \
+!memory { align(1 << $size); reg($rn); }
+
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+LD4m_p_RES A64_V 0 0 001100110 rm:5 0000 11 rn:5 rt:5
+
+# C6.3.162 LD4 (single structure) - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  0  1  1  0  0  0  0  0  x  x  1  S  size  Rn   Rt
+#                            [L][R]               [  opc  ]
+
+LD4_B A64_V 0 Q:1 001101011 00000 001 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1); reg($rn); }
+
+LD4_H A64_V 0 Q:1 001101011 00000 011 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && !(($size & 0x01) > 0); } \
+!memory { align(2); reg($rn); }
+
+# ReservedValue: break the !($size & 0x01) constraint
+LD4_H_RES A64_V 0 Q:1 001101011 00000 011 S:1 size:1 1 rn:5 rt:5
+
+LD4_S A64_V 0 Q:1 001101011 00000 101 S:1 00 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(4); reg($rn); }
+
+LD4_D A64_V 0 Q:1 001101011 00000 101 0 01 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(8); reg($rn); }
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  1  1  1    Rm     x  x  1  S  size  Rn   Rt
+#                            [L][R]         [  opc  ]
+
+LD4_Bp A64_V 0 Q:1 001101111 rm:5 001 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1); reg($rn); }
+
+LD4_Hp A64_V 0 Q:1 001101111 rm:5 011 S:1 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm && !(($size & 0x01) > 0); } \
+!memory { align(2); reg($rn); }
+
+# ReservedValue: break the !($size & 0x01) constraint
+LD4_Hp_RES A64_V 0 Q:1 001101111 rm:5 011 S:1 size:1 1 rn:5 rt:5
+
+LD4_Sp A64_V 0 Q:1 001101111 rm:5 101 S:1 00 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(4); reg($rn); }
+
+LD4_Dp A64_V 0 Q:1 001101111 rm:5 101 0 01 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(8); reg($rn); }
+
+# C6.3.163 LD4R - no offset
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  0  1  1  0  0  0  0  0  1  1  1  0  size  Rn   Rt
+#                            [L][R]               [  opc  ] S
+
+LD4R A64_V 0 Q:1 001101011 00000 111 0 size:2 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1 << $size); reg($rn); }
+
+# Post-index
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  0  1  1  1  1    Rm     1  1  1  0  size  Rn   Rt
+#                            [L][R]         [  opc  ] S
+
+LD4R_p A64_V 0 Q:1 001101111 rm:5 111 0 size:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1 << $size); reg($rn); }
+
+@
+
+# C3.3.5 Load register (PC-relative literal)
+# 31 30 29 28 27 26 25 24 23       5 4    0
+#  opc   0  1  1  V  0  0    imm19     Rt
+#
+# XXX claudio NIY: problematic, as we need to reach the memblock
+# as a PC-relative immediate offset, and check the
+# constraints (whether it fits in immx).
+#
+# LDR_L A64 opc:2 0110 00 imm:19 rt:5 \
+# !constraints { $opc != 0x3; } \
+# !memory { pc_adr(); }
+# PRFM_L A64 11 0 110 00 imm:19 rt:5
+
+# C3.3.6 Load/store exclusive
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15 14     10 9    5 4    0
+#  size  0  0  1  0  0  0 o2  L o1    Rs    o0    Rt2      Rn     Rt
+
+# size o2 L o1 o0
+#  00   0  0 0  0  STXRB            -
+#  00   0  0 0  1  STLXRB           -
+#  00   1  0 0  1  STLRB            -
+
+#  01   0  0 0  0  STXRH            -
+#  01   0  0 0  1  STLXRH           -
+#  01   1  0 0  1  STLRH            -
+
+#  00   0  1 0  0  LDXRB            -
+#  00   0  1 0  1  LDAXRB           -
+#  00   1  1 0  1  LDARB            -
+
+#  01   0  1 0  0  LDXRH            -
+#  01   0  1 0  1  LDAXRH           -
+#  01   1  1 0  1  LDARH            -
+
+#  10   0  0 0  0  STXR        32-bit
+#  10   0  0 0  1  STLXR       32-bit
+#  10   1  0 0  1  STLR        32-bit
+
+#  10   0  1 0  0  LDXR        32-bit
+#  10   0  1 0  1  LDAXR       32-bit
+#  10   1  1 0  1  LDAR        32-bit
+
+#  11   0  0 0  0  STXR        64-bit
+#  11   0  0 0  1  STLXR       64-bit
+#  11   1  0 0  1  STLR        64-bit
+
+#  11   0  1 0  0  LDXR        64-bit
+#  11   0  1 0  1  LDAXR       64-bit
+#  11   1  1 0  1  LDAR        64-bit
+
+# data is in rt, base address in rn, status written to rs
+
+# XXX note: the rn != rt, rn != rtt constraint is a limitation
+# of risu. If rn = rt, the SUB used to normalize the base to a non
+# process-dependent value is going to have the opposite effect to
+# change the load result to a process-dependent value.
+# The Tech. Ref. Manual defines behavior for rn == rt in some
+# cases (not with writeback, ... etc), so at some point we should
+# find out how to relax some of these constraints to really check
+# the whole range of possibilities.
+
+@Store
+
+STXRB A64 00 001000 000 rs:5 0 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rs != $rt && $rs != $rn && $rn != $rt; } \
+!memory { align(1); reg($rn); }
+
+STLXRB A64 00 001000 000 rs:5 1 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rs != $rt && $rs != $rn && $rn != $rt; } \
+!memory { align(1); reg($rn); }
+
+STLRB A64 00 001000 100 11111 1 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(1); reg($rn); }
+
+STXRH A64 01 001000 000 rs:5 0 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rs != $rt && $rs != $rn && $rn != $rt; } \
+!memory { align(2); reg($rn); }
+
+STLXRH A64 01 001000 000 rs:5 1 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rs != $rt && $rs != $rn && $rn != $rt; } \
+!memory { align(2); reg($rn); }
+
+STLRH A64 01 001000 100 11111 1 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(2); reg($rn); }
+
+@Load
+
+LDXRB A64 00 001000 010 11111 0 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(1); reg($rn); }
+
+LDAXRB A64 00 001000 010 11111 1 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(1); reg($rn); }
+
+LDARB A64 00 001000 110 11111 1 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(1); reg($rn); }
+
+LDXRH A64 01 001000 010 11111 0 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(2); reg($rn); }
+
+LDAXRH A64 01 001000 010 11111 1 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(2); reg($rn); }
+
+LDARH A64 01 001000 110 11111 1 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(2); reg($rn); }
+
+@Store
+
+STXRW A64 10 001000 000 rs:5 0 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rs != $rt && $rs != $rn && $rn != $rt; } \
+!memory { align(4); reg($rn); }
+
+STLXRW A64 10 001000 000 rs:5 1 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rs != $rt && $rs != $rn && $rn != $rt; } \
+!memory { align(4); reg($rn); }
+
+STLRW A64 10 001000 100 11111 1 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(4); reg($rn); }
+
+@Load
+
+LDXRW A64 10 001000 010 11111 0 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(4); reg($rn); }
+
+LDAXRW A64 10 001000 010 11111 1 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(4); reg($rn); }
+
+LDARW A64 10 001000 110 11111 1 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(4); reg($rn); }
+
+@Store
+
+STXR A64 11 001000 000 rs:5 0 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rs != $rt && $rs != $rn && $rn != $rt; } \
+!memory { align(8); reg($rn); }
+
+STLXR A64 11 001000 000 rs:5 1 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rs != $rt && $rs != $rn && $rn != $rt; } \
+!memory { align(8); reg($rn); }
+
+STLR A64 11 001000 100 11111 1 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(8); reg($rn); }
+
+@Load
+
+LDXR A64 11 001000 010 11111 0 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(8); reg($rn); }
+
+LDAXR A64 11 001000 010 11111 1 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(8); reg($rn); }
+
+LDAR A64 11 001000 110 11111 1 11111 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(8); reg($rn); }
+
+@
+
+#  Now with P (pair load/stores):
+#  10   0  0 1  0  STXP        32-bit
+#  10   0  0 1  1  STLXP       32-bit
+
+#  10   0  1 1  0  LDXP        32-bit
+#  10   0  1 1  1  LDAXP       32-bit
+
+#  11   0  0 1  0  STXP        64-bit
+#  11   0  0 1  1  STLXP       64-bit
+
+#  11   0  1 1  0  LDXP        64-bit
+#  11   0  1 1  1  LDAXP       64-bit
+
+@Store
+
+STXPW A64 10 001000 001 rs:5 0 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rs != $rt && $rs != $rtt && $rs != $rn && $rn != $rt && $rn != $rtt; } \
+!memory { align(8); reg($rn); }
+
+STLXPW A64 10 001000 001 rs:5 1 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rs != $rt && $rs != $rtt && $rs != $rn && $rn != $rt && $rn != $rtt; } \
+!memory { align(8); reg($rn); }
+
+@Load
+
+LDXPW A64 10 001000 011 11111 0 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rt != $rtt && $rn != $rt && $rn != $rtt; } \
+!memory { align(8); reg($rn); }
+
+LDAXPW A64 10 001000 011 11111 1 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rt != $rtt && $rn != $rt && $rn != $rtt; } \
+!memory { align(8); reg($rn); }
+
+@Store
+
+STXP A64 11 001000 001 rs:5 0 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rs != $rt && $rs != $rtt && $rs != $rn && $rn != $rt && $rn != $rtt; } \
+!memory { align(16); reg($rn); }
+
+STLXP A64 11 001000 001 rs:5 1 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rs != $rt && $rs != $rtt && $rs != $rn && $rn != $rt && $rn != $rtt; } \
+!memory { align(16); reg($rn); }
+
+@Load
+
+LDXP A64 11 001000 011 11111 0 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rt != $rtt && $rn != $rt && $rn != $rtt; } \
+!memory { align(16); reg($rn); }
+
+LDAXP A64 11 001000 011 11111 1 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rt != $rtt && $rn != $rt && $rn != $rtt; } \
+!memory { align(16); reg($rn); }
+
+@
+
+# C3.3.7 Load/store no-allocate pair (offset)
+# 31 30 29 28 27 26 25 24 23 22 21      15 14     10 9    5 4    0
+#  opc   1  0  1  V  0  0  0  L    simm7      Rt2      Rn     Rt
+#
+#  opc            V           L
+#   00            0           0    STNP 32-bit
+#   00            0           1    LDNP 32-bit
+#   10            0           0    STNP 64-bit
+#   10            0           1    LDNP 64-bit
+
+@Store
+
+STNPW A64 00 101 0 000 0 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rn != $rtt; } \
+!memory { align(8); reg_plus_imm($rn, sextract($imm, 7) * 4); }
+
+STNP A64 10 101 0 000 0 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rn != $rtt; } \
+!memory { align(16); reg_plus_imm($rn, sextract($imm, 7) * 8); }
+
+@Load
+
+LDNPW A64 00 101 0 000 1 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rt != $rtt && $rn != $rt && $rn != $rtt; } \
+!memory { align(8); reg_plus_imm($rn, sextract($imm, 7) * 4); }
+
+LDNP A64 10 101 0 000 1 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rt != $rtt && $rn != $rt && $rn != $rtt; } \
+!memory { align(16); reg_plus_imm($rn, sextract($imm, 7) * 8); }
+
+@
+
+# SIMD variants
+#  opc            V           L
+#   00            1           0    SIMD STNP  32-bit
+#   00            1           1    SIMD LDNP  32-bit
+#   01            1           0    SIMD STNP  64-bit
+#   01            1           1    SIMD LDNP  64-bit
+#   10            1           0    SIMD STNP 128-bit
+#   10            1           1    SIMD LDNP 128-bit
+
+# C6.3.283 STNP (SIMD&FP) C6.3.164 LDNP (SIMD&FP)
+# 31 30 29 28 27 26 25 24 23 22 21    15 14    10 9    5 4    0
+#  opc   1  0  1  1  0  0  0  L   imm7     Rt2      Rn     Rt
+
+STNPS A64_V 00 10110000 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(8); reg_plus_imm($rn, sextract($imm, 7) * 4); }
+
+LDNPS A64_V 00 10110001 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rt != $rtt; } \
+!memory { align(8); reg_plus_imm($rn, sextract($imm, 7) * 4); }
+
+STNPD A64_V 01 10110000 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(16); reg_plus_imm($rn, sextract($imm, 7) * 8); }
+
+LDNPD A64_V 01 10110001 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rt != $rtt; } \
+!memory { align(16); reg_plus_imm($rn, sextract($imm, 7) * 8); }
+
+STNPQ A64_V 10 10110000 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(32); reg_plus_imm($rn, sextract($imm, 7) * 16); }
+
+LDNPQ A64_V 10 10110001 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rt != $rtt; } \
+!memory { align(32); reg_plus_imm($rn, sextract($imm, 7) * 16); }
+
+# C3.3.8 Load/store register (immediate post-indexed)
+# 31 30 29 28 27 26 25 24 23 22 21 20      12 11 10 9    5 4    0
+#  size  1  1  1  V  0  0  opc   0    imm9     0  1   Rn     Rt
+# merged with 3.3.12
+
+# C3.3.9 Load/store register (immediate pre-indexed)
+# 31 30 29 28 27 26 25 24 23 22 21 20      12 11 10 9    5 4    0
+#  size  1  1  1  V  0  0  opc   0    imm9     1  1   Rn     Rt
+# merged with 3.3.12
+
+# C3.3.10 Load/store register (register offset)
+# 31 30 29 28 27 26 25 24 23 22 21 20      16 15     13 12 11 10 9    5 4        0
+#  size  1  1  1  V  0  0  opc   1     Rm      option    S  1  0   Rn       Rt
+#
+#   00            0         00     STRB (register)  -
+#   00            0         01     LDRB (register)  -
+#   00            0         10     LDRSB (register) 64-bit
+#   00            0         11     LDRSB (register) 32-bit
+#   01            0         00     STRH (register)  -
+#   01            0         01     LDRH (register)  -
+#   01            0         10     LDRSH (register) 64-bit
+#   01            0         11     LDRSH (register) 32-bit
+#   10            0         00     STR (register)   32-bit
+#   10            0         01     LDR (register)   32-bit
+#   10            0         10     LDRSW (register) -
+#   11            0         00     STR (register)   64-bit
+#   11            0         01     LDR (register)   64-bit
+#   11            0         10     PRFM (register)  -
+
+# XXX opt=011 for now (LSL), other options NIY.
+# XXX the constraint rn != rm is our limitation, not imposed by arch.
+STRBr A64 00 111000 00 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rm != $rt && $rn != $rm; } \
+!memory { align(1); reg_plus_reg_shifted($rn, $rm, $shft ? 0 : 0); }
+
+LDRBr A64 00 111000 01 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rm != $rt && $rn != $rm; } \
+!memory { align(1); reg_plus_reg_shifted($rn, $rm, $shft ? 0 : 0); }
+
+LDRSBr A64 00 111000 10 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rm != $rt && $rn != $rm; } \
+!memory { align(1); reg_plus_reg_shifted($rn, $rm, $shft ? 0 : 0); }
+
+LDRSBWr A64 00 111000 11 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rm != $rt && $rn != $rm; } \
+!memory { align(1); reg_plus_reg_shifted($rn, $rm, $shft ? 0 : 0); }
+
+STRHr A64 01 111000 00 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rm != $rt && $rn != $rm; } \
+!memory { align(2); reg_plus_reg_shifted($rn, $rm, $shft ? 1 : 0); }
+
+LDRHr A64 01 111000 01 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rm != $rt && $rn != $rm; } \
+!memory { align(2); reg_plus_reg_shifted($rn, $rm, $shft ? 1 : 0); }
+
+LDRSHr A64 01 111000 10 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rm != $rt && $rn != $rm; } \
+!memory { align(2); reg_plus_reg_shifted($rn, $rm, $shft ? 1 : 0); }
+
+LDRSHWr A64 01 111000 11 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rm != $rt && $rn != $rm; } \
+!memory { align(2); reg_plus_reg_shifted($rn, $rm, $shft ? 1 : 0); }
+
+STRWr A64 10 111000 00 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rm != $rt && $rn != $rm; } \
+!memory { align(4); reg_plus_reg_shifted($rn, $rm, $shft ? 2 : 0); }
+
+LDRWr A64 10 111000 01 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rm != $rt && $rn != $rm; } \
+!memory { align(4); reg_plus_reg_shifted($rn, $rm, $shft ? 2 : 0); }
+
+LDRSWr A64 10 111000 10 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rm != $rt && $rn != $rm; } \
+!memory { align(4); reg_plus_reg_shifted($rn, $rm, $shft ? 2 : 0); }
+
+STRr A64 11 111000 00 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rm != $rt && $rn != $rm; } \
+!memory { align(8); reg_plus_reg_shifted($rn, $rm, $shft ? 3 : 0); }
+
+LDRr A64 11 111000 01 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rm != $rt && $rn != $rm; } \
+!memory { align(8); reg_plus_reg_shifted($rn, $rm, $shft ? 3 : 0); }
+
+PRFMr A64 11 111000 10 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rm != $rt && $rn != $rm; } \
+!memory { align(8); reg_plus_reg_shifted($rn, $rm, $shft ? 3 : 0); }
+
+# C6.3.286 STR (register, SIMD&FP) (register offset)
+# 31 30 29 28 27 26 25 24 23 22 21 20       16 15    13 12 11 10 9  5 4  0
+#  size  1  1  1  1  0  0  x  0  1     Rm       option   S  1  0  Rn   Rt
+#                [V]      [ opc ]
+#   00            1         00     SIMD STR (register)  8bit
+#   00            1         01     SIMD LDR (register)  8bit
+#   01            1         00     SIMD STR (register)  16bit
+#   01            1         01     SIMD LDR (register)  16bit
+#   10            1         00     SIMD STR (register)  32bit
+#   10            1         01     SIMD LDR (register)  32bit
+#   11            1         00     SIMD STR (register)  64bit
+#   11            1         01     SIMD LDR (register)  64bit
+#   00            1         10     SIMD STR (register) 128bit
+#   00            1         11     SIMD LDR (register) 128bit
+#
+# XXX NIY: only LSL option=011 implemented
+
+STRBr A64_V 00 111100 00 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1); reg_plus_reg_shifted($rn, $rm, $shft ? 0 : 0); }
+
+LDRBr A64_V 00 111100 01 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(1); reg_plus_reg_shifted($rn, $rm, $shft ? 0 : 0); }
+
+STRHr A64_V 01 111100 00 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(2); reg_plus_reg_shifted($rn, $rm, $shft ? 1 : 0); }
+
+LDRHr A64_V 01 111100 01 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(2); reg_plus_reg_shifted($rn, $rm, $shft ? 1 : 0); }
+
+STRSr A64_V 10 111100 00 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(4); reg_plus_reg_shifted($rn, $rm, $shft ? 2 : 0); }
+
+LDRSr A64_V 10 111100 01 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(4); reg_plus_reg_shifted($rn, $rm, $shft ? 2 : 0); }
+
+STRDr A64_V 11 111100 00 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(8); reg_plus_reg_shifted($rn, $rm, $shft ? 3 : 0); }
+
+LDRDr A64_V 11 111100 01 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(8); reg_plus_reg_shifted($rn, $rm, $shft ? 3 : 0); }
+
+STRQr A64_V 00 111100 10 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(16); reg_plus_reg_shifted($rn, $rm, $shft ? 4 : 0); }
+
+LDRQr A64_V 00 111100 11 1 rm:5 011 shft:1 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rm; } \
+!memory { align(16); reg_plus_reg_shifted($rn, $rm, $shft ? 4 : 0); }
+
+# C3.3.11 Load/store register (unprivileged)
+# 31 30 29 28 27 26 25 24 23 22 21 20      12 11 10 9    5 4        0
+#  size  1  1  1  V  0  0  opc   0    imm9     1  0   Rn       Rt
+#
+#  size           V        opc
+#   00            0         00      STTRB   -
+#   00            0         01      LDTRB   -
+#   00            0         10      LDTRSB  64-bit
+#   00            0         11      LDTRSB  32-bit
+#   01            0         00      STTRH   -
+#   01            0         01      LDTRH   -
+#   01            0         10      LDTRSH  64-bit
+#   01            0         11      LDTRSH  32-bit
+#   10            0         00      STTR    32-bit
+#   10            0         01      LDTR    32-bit
+#   10            0         10      LDTRSW  -
+#   11            0         00      STTR    64-bit
+#   11            0         01      LDTR    64-bit
+
+STTRB A64 00 111000 00 0 imm:9 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(1); reg_plus_imm($rn, sextract($imm, 9)); }
+
+LDTRB A64 00 111000 01 0 imm:9 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(1); reg_plus_imm($rn, sextract($imm, 9)); }
+
+LDTRSB A64 00 111000 10 0 imm:9 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(1); reg_plus_imm($rn, sextract($imm, 9)); }
+
+LDTRSBW A64 00 111000 11 0 imm:9 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(1); reg_plus_imm($rn, sextract($imm, 9)); }
+
+STTRH A64 01 111000 00 0 imm:9 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(2); reg_plus_imm($rn, sextract($imm, 9)); }
+
+LDTRH A64 01 111000 01 0 imm:9 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(2); reg_plus_imm($rn, sextract($imm, 9)); }
+
+LDTRSH A64 01 111000 10 0 imm:9 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(2); reg_plus_imm($rn, sextract($imm, 9)); }
+
+LDTRSHW A64 01 111000 11 0 imm:9 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(2); reg_plus_imm($rn, sextract($imm, 9)); }
+
+STTRW A64 10 111000 00 0 imm:9 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(4); reg_plus_imm($rn, sextract($imm, 9)); }
+
+LDTRW A64 10 111000 01 0 imm:9 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(4); reg_plus_imm($rn, sextract($imm, 9)); }
+
+LDTRSW A64 10 111000 10 0 imm:9 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(4); reg_plus_imm($rn, sextract($imm, 9)); }
+
+STTR A64 11 111000 00 0 imm:9 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(8); reg_plus_imm($rn, sextract($imm, 9)); }
+
+LDTR A64 11 111000 01 0 imm:9 10 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(8); reg_plus_imm($rn, sextract($imm, 9)); }
+
+# C3.3.12 Load/store register (unscaled immediate)
+# 31 30 29 28 27 26 25 24 23 22 21 20      12 11 10 9    5 4    0
+#  size  1  1  1  V  0  0  opc   0    imm9     0  0   Rn     Rt
+# NB: also includes C3.3.8 (immediate post-indexed)
+# NB: also includes C3.3.9 (immediate pre-indexed)
+# NB: 3.3.8 and 3.3.9 are merged using the idx field.
+# NB: the address being accessed is the same with the exception
+# NB: of post-indexed, where the address is not offset.
+# NB: note that PRFUM has no pre/post version.
+#  size           V        opc
+#   00            0        00       STURB   -
+#   00            0        01       LDURB   -
+#   00            0        10       LDURSB  64-bit
+#   00            0        11       LDURSB  32-bit
+#   01            0        00       STURH   -
+#   01            0        01       LDURH   -
+#   01            0        10       LDURSH  64-bit
+#   01            0        11       LDURSH  32-bit
+#   10            0        00       STUR    32-bit
+#   10            0        01       LDUR    32-bit
+#   10            0        10       LDURSW  -
+#   11            0        00       STUR    64-bit
+#   11            0        01       LDUR    64-bit
+#   11            0        10       PRFUM   -
+
+STURB A64 00 111000 00 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $idx != 2; } \
+!memory { align(1); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+LDURB A64 00 111000 01 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $idx != 2; } \
+!memory { align(1); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+LDURSB A64 00 111000 10 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $idx != 2; } \
+!memory { align(1); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+LDURSBW A64 00 111000 11 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $idx != 2; } \
+!memory { align(1); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+STURH A64 01 111000 00 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $idx != 2; } \
+!memory { align(2); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+LDURH A64 01 111000 01 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $idx != 2; } \
+!memory { align(2); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+LDURSH A64 01 111000 10 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $idx != 2; } \
+!memory { align(2); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+LDURSHW A64 01 111000 11 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $idx != 2; } \
+!memory { align(2); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+STURW A64 10 111000 00 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $idx != 2; } \
+!memory { align(4); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+LDURW A64 10 111000 01 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $idx != 2; } \
+!memory { align(4); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+LDURSW A64 10 111000 10 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $idx != 2; } \
+!memory { align(4); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+STUR A64 11 111000 00 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $idx != 2; } \
+!memory { align(8); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+LDUR A64 11 111000 01 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $idx != 2; } \
+!memory { align(8); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+PRFUM A64 11 111000 10 0 imm:9 00 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(8); reg_plus_imm($rn, sextract($imm, 9)); }
+
+# C6.3.287 STUR (SIMD&FP)
+# 31 30 29 28 27 26 25 24 23 22 21 20         12 11 10 9  5 4  0
+#  size  1  1  1  1  0  0  x  0  0      imm9      0  0  Rn   Rt
+#                [V]      [opc ]
+
+STURB A64_V 00 111100 00 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $idx != 2; } \
+!memory { align(1); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+LDURB A64_V 00 111100 01 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $idx != 2; } \
+!memory { align(1); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+STURH A64_V 01 111100 00 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $idx != 2; } \
+!memory { align(2); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+LDURH A64_V 01 111100 01 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $idx != 2; } \
+!memory { align(2); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+STURS A64_V 10 111100 00 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $idx != 2; } \
+!memory { align(4); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+LDURS A64_V 10 111100 01 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $idx != 2; } \
+!memory { align(4); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+STURD A64_V 11 111100 00 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $idx != 2; } \
+!memory { align(8); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+LDURD A64_V 11 111100 01 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $idx != 2; } \
+!memory { align(8); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+STURQ A64_V 00 111100 10 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $idx != 2; } \
+!memory { align(16); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+LDURQ A64_V 00 111100 11 0 imm:9 idx:2 rn:5 rt:5 \
+!constraints { $rn != 31 && $idx != 2; } \
+!memory { align(16); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 9)); }
+
+# C3.3.13 Load/store register (unsigned immediate)
+# 31 30 29 28 27 26 25 24 23 22 21         10 9    5 4    0
+#  size  1  1  1  V  0  1  opc       imm12      Rn     Rt
+#   00            0         00  STRB (immediate)
+#   00            0         01  LDRB (immediate)
+#   00            0         10  LDRSB (immediate)        64-bit
+#   00            0         11  LDRSB (immediate)        32-bit
+#   01            0         00  STRH (immediate)         Unsigned offset
+#   01            0         01  LDRH (immediate)         Unsigned offset
+#   01            0         10  LDRSH (immediate)        64-bit
+#   01            0         11  LDRSH (immediate)        32-bit
+#   10            0         00  STR (immediate)          32-bit
+#   10            0         01  LDR (immediate)          32-bit
+#   10            0         10  LDRSW (immediate)        Unsigned offset
+#   11            0         00  STR (immediate)          64-bit
+#   11            0         01  LDR (immediate)          64-bit
+#   11            0         10  PRFM (immediate)         -
+
+STRBi A64 00 111001 00 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(1); reg_plus_imm($rn, $imm); }
+
+LDRBi A64 00 111001 01 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(1); reg_plus_imm($rn, $imm); }
+
+LDRSBi A64 00 111001 10 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(1); reg_plus_imm($rn, $imm); }
+
+LDRSBWi A64 00 111001 11 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(1); reg_plus_imm($rn, $imm); }
+
+STRHi A64 01 111001 00 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(2); reg_plus_imm($rn, $imm * 2); }
+
+LDRHi A64 01 111001 01 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(2); reg_plus_imm($rn, $imm * 2); }
+
+LDRSHi A64 01 111001 10 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(2); reg_plus_imm($rn, $imm * 2); }
+
+LDRSHWi A64 01 111001 11 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(2); reg_plus_imm($rn, $imm * 2); }
+
+STRWi A64 10 111001 00 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(4); reg_plus_imm($rn, $imm * 4); }
+
+LDRWi A64 10 111001 01 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(4); reg_plus_imm($rn, $imm * 4); }
+
+LDRSWi A64 10 111001 10 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(4); reg_plus_imm($rn, $imm * 4); }
+
+STRi A64 11 111001 00 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(8); reg_plus_imm($rn, $imm * 8); }
+
+LDRi A64 11 111001 01 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(8); reg_plus_imm($rn, $imm * 8); }
+
+PRFMi A64 11 111001 10 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt; } \
+!memory { align(8); reg_plus_imm($rn, $imm * 8); }
+
+# C6.3.285 STR (immediate, SIMD&FP) - Unsigned offset
+#  31 30 29 28 27 26 25 24 23 22 21       10 9  5 4  0
+#   size  1  1  1  1  0  1  opc     imm12     Rn   Rt
+#                 [V]
+
+STRBi A64_V 00 111101 00 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1); reg_plus_imm($rn, $imm); }
+
+LDRBi A64_V 00 111101 01 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(1); reg_plus_imm($rn, $imm); }
+
+STRHi A64_V 01 111101 00 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(2); reg_plus_imm($rn, $imm * 2); }
+
+LDRHi A64_V 01 111101 01 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(2); reg_plus_imm($rn, $imm * 2); }
+
+STRSi A64_V 10 111101 00 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(4); reg_plus_imm($rn, $imm * 4); }
+
+LDRSi A64_V 10 111101 01 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(4); reg_plus_imm($rn, $imm * 4); }
+
+STRDi A64_V 11 111101 00 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(8); reg_plus_imm($rn, $imm * 8); }
+
+LDRDi A64_V 11 111101 01 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(8); reg_plus_imm($rn, $imm * 8); }
+
+STRQi A64_V 00 111101 10 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(16); reg_plus_imm($rn, $imm * 16); }
+
+LDRQi A64_V 00 111101 11 imm:12 rn:5 rt:5 \
+!constraints { $rn != 31; } \
+!memory { align(16); reg_plus_imm($rn, $imm * 16); }
+
+# C3.3.14 Load/store register pair (offset)
+# 31 30 29 28 27 26 25 24 23 22 21      15 14     10 9    5 4    0
+#  opc   1  0  1  V  0  1  0  L    imm7       Rt2      Rn     Rt
+#   00            0           0    STP   32-bit
+#   00            0           1    LDP   32-bit
+#   01            0           1    LDPSW Signed offset
+#   10            0           0    STP   64-bit
+#   10            0           1    LDP   64-bit
+# NB: also includes C3.3.15 (post-indexed)
+# NB: also includes C3.3.16 (pre-indexed)
+# NB: 3.3.15 and 3.3.16 are merged using the idx field.
+# NB: the address being accessed is the same with the exception
+# NB: of post-indexed, where the address is not offset.
+# NB: note that idx=0 is not included (used for non-temporal pair)
+
+STPW A64 00 101 0 0 idx:2 0 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rn != $rtt && $idx != 0; } \
+!memory { align(8); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 7) * 4); }
+
+LDPW A64 00 101 0 0 idx:2 1 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rt != $rtt && $rn != $rt && $rn != $rtt && $idx != 0; } \
+!memory { align(8); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 7) * 4); }
+
+LDPSW A64 01 101 0 0 idx:2 1 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rt != $rtt && $rn != $rt && $rn != $rtt && $idx != 0; } \
+!memory { align(8); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 7) * 4); }
+
+STP A64 10 101 0 0 idx:2 0 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $rn != $rtt && $idx != 0; } \
+!memory { align(16); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 7) * 8); }
+
+LDP A64 10 101 0 0 idx:2 1 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rt != $rtt && $rn != $rt && $rn != $rtt && $idx != 0; } \
+!memory { align(16); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 7) * 8); }
+
+# C6.3.284 STP (SIMD&FP) post/pre signed offset
+# 31 30 29 28 27 26 25 24 23 22 21    15 14   10 9  5 4  0
+#  opc   1  0  1  1  0  0  1  0   imm7     Rt2    Rn   Rt
+#                [V]   [idx ][L]
+STPS A64_V 00 10110 idx:2 0 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $idx != 0; } \
+!memory { align(8); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 7) * 4); }
+
+LDPS A64_V 00 10110 idx:2 1 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rt != $rtt && $idx != 0; } \
+!memory { align(8); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 7) * 4); }
+
+STPD A64_V 01 10110 idx:2 0 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $idx != 0; } \
+!memory { align(16); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 7) * 8); }
+
+LDPD A64_V 01 10110 idx:2 1 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rt != $rtt && $idx != 0; } \
+!memory { align(16); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 7) * 8); }
+
+STPQ A64_V 10 10110 idx:2 0 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $idx != 0; } \
+!memory { align(32); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 7) * 16); }
+
+LDPQ A64_V 10 10110 idx:2 1 imm:7 rtt:5 rn:5 rt:5 \
+!constraints { $rn != 31 && $rt != $rtt && $idx != 0; } \
+!memory { align(32); reg_plus_imm($rn, $idx == 1 ? 0 : sextract($imm, 7) * 16); }
+
+
+# Data processing - immediate
+#
+# 31  29| 28 27 26 | 25 24 23 | 22                              0
+# - - - |  1  0  0 |    op0   |
+# Where op0:
+#  00x - PC-rel. addressing
+#  01x - Add/subtract (immediate)
+#  100 - Logical (immediate)
+#  101 - Move wide (immediate)
+#  110 - Bitfield
+#  111 - Extract
+
+@DataProcessingImmediate
+
+# - Arithmetic (immediate)
+# 31 30 29 | 28 27 26 25 24 |23 22| 21       10 | 9    5 | 4    0
+# sf op  S |  1  0  0  0  1 | shft|    imm12    |   Rn   |   Rd
+
+ADDi A64 sf:1 00 10001 0 shft:1 imm:12 rn:5 rd:5 \
+!constraints { $rn != 31 && $rd != 31; }
+
+ADDSi A64 sf:1 01 10001 0 shft:1 imm:12 rn:5 rd:5 \
+!constraints { $rn != 31 && $rd != 31; }
+
+SUBi A64 sf:1 10 10001 0 shft:1 imm:12 rn:5 rd:5 \
+!constraints { $rn != 31 && $rd != 31; }
+
+SUBSi A64 sf:1 11 10001 0 shft:1 imm:12 rn:5 rd:5 \
+!constraints { $rn != 31 && $rd != 31; }
+
+# - Bitfield move
+# 31 | 30 29 | 28 27 26 25 24 23| 22 | 21      16 15      10 9    5 4    0
+# sf |  opc  |  1  0  0  1  1  0|  N |    immr       imms      Rn     Rd
+#
+
+SBFM A64 sf:1 00 100110 sn:1 immr:6 imms:6 rn:5 rd:5 \
+!constraints { \
+    ($sf == $sn) && ($sf == 1 || ($immr <= 0x1f && $imms <= 0x1f)); \
+}
+
+# ReservedValue: break the ($sf == $sn) constraint
+SBFM_RES1 A64 sf:1 00 100110 sn:1 immr:6 imms:6 rn:5 rd:5 \
+!constraints { $sf != $sn; }
+# ReservedValue: break the ($immr <= 0x1f) constraint
+SBFM_RES2 A64 0 00 100110 0 1 immr:5 imms:6 rn:5 rd:5
+# ReservedValue: break the ($imms <= 0x1f) constraint
+SBFM_RES3 A64 0 00 100110 0 immr:6 1 imms:5 rn:5 rd:5
+
+BFM A64 sf:1 01 100110 sn:1 immr:6 imms:6 rn:5 rd:5 \
+!constraints { \
+    ($sf == $sn) && ($sf == 1 || ($immr <= 0x1f && $imms <= 0x1f)); \
+}
+
+# ReservedValue: break the ($sf == $sn) constraint
+BFM_RES1 A64 sf:1 01 100110 sn:1 immr:6 imms:6 rn:5 rd:5 \
+!constraints { $sf != $sn; }
+# ReservedValue: break the ($immr <= 0x1f) constraint
+BFM_RES2 A64 0 01 100110 0 1 immr:5 imms:6 rn:5 rd:5
+# ReservedValue: break the ($imms <= 0x1f) constraint
+BFM_RES3 A64 0 01 100110 0 immr:6 1 imms:5 rn:5 rd:5
+
+UBFM A64 sf:1 10 100110 sn:1 immr:6 imms:6 rn:5 rd:5 \
+!constraints { \
+    ($sf == $sn) && ($sf == 1 || ($immr <= 0x1f && $imms <= 0x1f)); \
+}
+
+# ReservedValue: break the ($sf == $sn) constraint
+UBFM_RES1 A64 sf:1 10 100110 sn:1 immr:6 imms:6 rn:5 rd:5 \
+!constraints { $sf != $sn; }
+# ReservedValue: break the ($immr <= 0x1f) constraint
+UBFM_RES2 A64 0 10 100110 sn:1 1 immr:5 imms:6 rn:5 rd:5
+# ReservedValue: break the ($imms <= 0x1f) constraint
+UBFM_RES3 A64 0 10 100110 sn:1 immr:6 1 imms:5 rn:5 rd:5
+
+#  - Bitfield insert and extract
+# 31 |30 29| 28 27 26 25 24 23| 22 | 21 | 20    16 15      10 9    5 4    0
+# sf |op21 |  1  0  0  1  1  1|  N | o0 |    Rm       imms      Rn     Rd
+
+EXTRW A64 0 00 100111 0 0 rm:5 0 imms:5 rn:5 rd:5
+
+EXTR A64 1 00 100111 1 0 rm:5 imms:6 rn:5 rd:5
+
+# - Logical (immediate)
+# 31 |30 29| 28 27 26 25 24 23| 22 | 21      16 15      10 9    5 4    0
+# sf |opc  |  1  0  0  1  0  0|  N |    immr       imms      Rn     Rd
+
+ANDi A64 sf:1 00 100100 sn:1 immr:6 imms:6 rn:5 rd:5 \
+!constraints { \
+    ($rn != 31 && $rd != 31) && \
+    ($sf == 1 || $sn == 0) && \
+    (($sn == 0 && $imms <= 0x3c && $imms != 0x3b && $imms != 0x37 && $imms != 0x2f && $imms != 0x1f) || ($sn == 1 && $imms != 0x3f)); \
+}
+
+# ReservedValue: break the constraint ($sf==0 => $sn==0)
+ANDi_RES1 A64 0 00 100100 1 immr:6 imms:6 rn:5 rd:5
+# ReservedValue: break the imms constraints
+ANDi_RES2 A64 0 00 100100 0 immr:6 111110 rn:5 rd:5
+ANDi_RES3 A64 0 00 100100 0 immr:6 111101 rn:5 rd:5
+ANDi_RES4 A64 0 00 100100 0 immr:6 111011 rn:5 rd:5
+ANDi_RES5 A64 0 00 100100 0 immr:6 110111 rn:5 rd:5
+ANDi_RES6 A64 0 00 100100 0 immr:6 101111 rn:5 rd:5
+ANDi_RES7 A64 0 00 100100 0 immr:6 011111 rn:5 rd:5
+ANDi_RES8 A64 sf:1 00 100100 sn:1 immr:6 111111 rn:5 rd:5
+
+ORRi A64 sf:1 01 100100 sn:1 immr:6 imms:6 rn:5 rd:5 \
+!constraints { \
+    ($rn != 31 && $rd != 31) && \
+    ($sf == 1 || $sn == 0) && \
+    (($sn == 0 && $imms <= 0x3c && $imms != 0x3b && $imms != 0x37 && $imms != 0x2f && $imms != 0x1f) || ($sn == 1 && $imms != 0x3f)); \
+}
+
+# ReservedValue: break the constraint ($sf==0 => $sn==0)
+ORRi_RES1 A64 0 01 100100 1 immr:6 imms:6 rn:5 rd:5
+# ReservedValue: break the imms constraints
+ORRi_RES2 A64 0 01 100100 0 immr:6 111110 rn:5 rd:5
+ORRi_RES3 A64 0 01 100100 0 immr:6 111101 rn:5 rd:5
+ORRi_RES4 A64 0 01 100100 0 immr:6 111011 rn:5 rd:5
+ORRi_RES5 A64 0 01 100100 0 immr:6 110111 rn:5 rd:5
+ORRi_RES6 A64 0 01 100100 0 immr:6 101111 rn:5 rd:5
+ORRi_RES7 A64 0 01 100100 0 immr:6 011111 rn:5 rd:5
+ORRi_RES8 A64 sf:1 01 100100 sn:1 immr:6 111111 rn:5 rd:5
+
+EORi A64 sf:1 10 100100 sn:1 immr:6 imms:6 rn:5 rd:5 \
+!constraints { \
+    ($rn != 31 && $rd != 31) && \
+    ($sf == 1 || $sn == 0) && \
+    (($sn == 0 && $imms <= 0x3c && $imms != 0x3b && $imms != 0x37 && $imms != 0x2f && $imms != 0x1f) || ($sn == 1 && $imms != 0x3f)); \
+}
+
+# ReservedValue: break the constraint ($sf==0 => $sn==0)
+EORi_RES1 A64 0 10 100100 1 immr:6 imms:6 rn:5 rd:5
+# ReservedValue: break the imms constraints
+EORi_RES2 A64 0 10 100100 0 immr:6 111110 rn:5 rd:5
+EORi_RES3 A64 0 10 100100 0 immr:6 111101 rn:5 rd:5
+EORi_RES4 A64 0 10 100100 0 immr:6 111011 rn:5 rd:5
+EORi_RES5 A64 0 10 100100 0 immr:6 110111 rn:5 rd:5
+EORi_RES6 A64 0 10 100100 0 immr:6 101111 rn:5 rd:5
+EORi_RES7 A64 0 10 100100 0 immr:6 011111 rn:5 rd:5
+EORi_RES8 A64 sf:1 10 100100 sn:1 immr:6 111111 rn:5 rd:5
+
+ANDSi A64 sf:1 11 100100 sn:1 immr:6 imms:6 rn:5 rd:5 \
+!constraints { \
+    ($rn != 31 && $rd != 31) && \
+    ($sf == 1 || $sn == 0) && \
+    (($sn == 0 && $imms <= 0x3c && $imms != 0x3b && $imms != 0x37 && $imms != 0x2f && $imms != 0x1f) || ($sn == 1 && $imms != 0x3f)); \
+}
+
+# ReservedValue: break the constraint ($sf==0 => $sn==0)
+ANDSi_RES1 A64 0 11 100100 1 immr:6 imms:6 rn:5 rd:5
+# ReservedValue: break the imms constraints
+ANDSi_RES2 A64 0 11 100100 0 immr:6 111110 rn:5 rd:5
+ANDSi_RES3 A64 0 11 100100 0 immr:6 111101 rn:5 rd:5
+ANDSi_RES4 A64 0 11 100100 0 immr:6 111011 rn:5 rd:5
+ANDSi_RES5 A64 0 11 100100 0 immr:6 110111 rn:5 rd:5
+ANDSi_RES6 A64 0 11 100100 0 immr:6 101111 rn:5 rd:5
+ANDSi_RES7 A64 0 11 100100 0 immr:6 011111 rn:5 rd:5
+ANDSi_RES8 A64 sf:1 11 100100 sn:1 immr:6 111111 rn:5 rd:5
+
+# - Move wide (immediate)
+# 31 |30 29| 28 27 26 25 24 23 | 22 21 | 20       5 4    0
+# sf |opc  |  1  0  0  1  0  1 |  hw   |    imm16     Rd
+# hw is shift/16 (bigger values invalid for 32 bit)
+
+MOVN A64 sf:1 00 100101 hw:2 imm:16 rd:5 \
+!constraints { !($sf == 0 && ($hw & 2) == 2); }
+
+MOVZ A64 sf:1 10 100101 hw:2 imm:16 rd:5 \
+!constraints { !($sf == 0 && ($hw & 2) == 2); }
+
+MOVK A64 sf:1 11 100101 hw:2 imm:16 rd:5 \
+!constraints { !($sf == 0 && ($hw & 2) == 2); }
+
+# PC-rel. addressing NIY
+
+@
+# End of Data Processing Immediate
+
+# Data processing - Register
+#
+# 31  30 29  28 | 27 26 25 | 24   21 | 20      12 | 11  | 10          0
+#  - op0  - op1 |  1  0  1 |   op2   |            | op3 |
+@DataProcessingRegister
+
+# - Add/subtract (extended register)
+# 31 30 29 28 27 26 25 24 |23 22| 21 | 20    16 15    13 12  10 9    5 4    0
+# sf op  S  0  1  0  1  1 | opt |  1 |    Rm     option   imm3    Rn     Rd
+#
+# NB: rn == 31 is perfectly valid, however RISU doesn't generate instructions that
+# use the SP as that can cause problems with different SPs across systems
+
+ADDx A64 sf:1 00 01011 00 1 rm:5 option:3 imm:3 rn:5 rd:5 \
+!constraints { $rn != 31 && $rd != 31 && $imm <= 4; }
+# ReservedValue: break the (imm <= 4) constraint
+ADDx_RES A64 sf:1 00 01011 00 1 rm:5 option:3 imm:3 rn:5 rd:5 \
+!constraints { $imm > 4; }
+
+ADDSx A64 sf:1 01 01011 00 1 rm:5 option:3 imm:3 rn:5 rd:5 \
+!constraints { $rn != 31 && $rd != 31 && $imm <= 4; }
+# ReservedValue: break the (imm <= 4) constraint
+ADDSx_RES A64 sf:1 01 01011 00 1 rm:5 option:3 imm:3 rn:5 rd:5 \
+!constraints { $imm > 4; }
+
+SUBx A64 sf:1 10 01011 00 1 rm:5 option:3 imm:3 rn:5 rd:5 \
+!constraints { $rn != 31 && $rd != 31 && $imm <= 4; }
+# ReservedValue: break the (imm <= 4) constraint
+SUBx_RES A64 sf:1 10 01011 00 1 rm:5 option:3 imm:3 rn:5 rd:5 \
+!constraints { $imm > 4; }
+
+SUBSx A64 sf:1 11 01011 00 1 rm:5 option:3 imm:3 rn:5 rd:5 \
+!constraints { $rn != 31 && $rd != 31 && $imm <= 4; }
+# ReservedValue: break the (imm <= 4) constraint
+SUBSx_RES A64 sf:1 11 01011 00 1 rm:5 option:3 imm:3 rn:5 rd:5 \
+!constraints { $imm > 4; }
+
+# - Add/subtract (shifted register)
+# 31 30 29 28 27 26 25 24 |23 22| 21 | 20    16 15      10 9    5 4    0
+# sf op  S  0  1  0  1  1 |shift|  0 |    Rm       imm6      Rn     Rd
+
+ADD A64 sf:1 00 01011 shft:2 0 rm:5 imm:6 rn:5 rd:5 \
+!constraints { $shft < 3 && ($sf == 1 || $imm <= 0x1f); }
+# ReservedValue: break the ($shft < 3) constraint
+ADD_RES1 A64 sf:1 00 01011 11 0 rm:5 imm:6 rn:5 rd:5
+# ReservedValue: break the ($imm <= 0x1f) constraint
+ADD_RES2 A64 0 00 01011 shft:2 0 rm:5 1 imm:5 rn:5 rd:5
+
+ADDS A64 sf:1 01 01011 shft:2 0 rm:5 imm:6 rn:5 rd:5 \
+!constraints { $shft < 3 && ($sf == 1 || $imm <= 0x1f); }
+# ReservedValue: break the ($shft < 3) constraint
+ADDS_RES1 A64 sf:1 01 01011 11 0 rm:5 imm:6 rn:5 rd:5
+# ReservedValue: break the ($imm <= 0x1f) constraint
+ADDS_RES2 A64 0 01 01011 shft:2 0 rm:5 1 imm:5 rn:5 rd:5
+
+SUB A64 sf:1 10 01011 shft:2 0 rm:5 imm:6 rn:5 rd:5 \
+!constraints { $shft < 3 && ($sf == 1 || $imm <= 0x1f); }
+# ReservedValue: break the ($shft < 3) constraint
+SUB_RES1 A64 sf:1 10 01011 11 0 rm:5 imm:6 rn:5 rd:5
+# ReservedValue: break the ($imm <= 0x1f) constraint
+SUB_RES2 A64 0 10 01011 shft:2 0 rm:5 1 imm:5 rn:5 rd:5
+
+SUBS A64 sf:1 11 01011 shft:2 0 rm:5 imm:6 rn:5 rd:5 \
+!constraints { $shft < 3 && ($sf == 1 || $imm <= 0x1f); }
+# ReservedValue: break the ($shft < 3) constraint
+SUBS_RES1 A64 sf:1 11 01011 11 0 rm:5 imm:6 rn:5 rd:5
+# ReservedValue: break the ($imm <= 0x1f) constraint
+SUBS_RES2 A64 0 11 01011 shft:2 0 rm:5 1 imm:5 rn:5 rd:5
+
+# - Add/subtract (with carry)
+# 31 30 29 28 27 26 25 24 23 22 21 |20    16 15         10 9    5 4    0
+# sf op  S  1  1  0  1  0  0  0  0 |   Rm       opcode2      Rn     Rd
+
+ADC A64 sf:1 00 11010000 rm:5 000000 rn:5 rd:5
+ADCS A64 sf:1 01 11010000 rm:5 000000 rn:5 rd:5
+
+SBC A64 sf:1 10 11010000 rm:5 000000 rn:5 rd:5
+SBCS A64 sf:1 11 11010000 rm:5 000000 rn:5 rd:5
+
+# - Conditional compare (immediate)
+
+# 31 30 29 28 27 26 25 24 23 22 21 20      16 15      12 11 10 9    5 4 3      0
+# sf op  1  1  1  0  1  0  0  1  0    imm5       cond     1  0   Rn   0   nzcv
+#
+#  0  0     CCMN (immediate) 32-bit
+#  0  1     CCMP (immediate) 32-bit
+#  1  0     CCMN (immediate) 64-bit
+#  1  1     CCMP (immediate) 64-bit
+
+CCMNi A64 sf:1 0 111010010 imm:5 cond:4 10 rn:5 0 nzcv:4
+CCMPi A64 sf:1 1 111010010 imm:5 cond:4 10 rn:5 0 nzcv:4
+
+# - Conditional compare (register)
+# 31 30 29 28 27 26 25 24 23 22 21 20       16 15      12 11 10 9    5 4 3        0
+# sf op  1  1  1  0  1  0  0  1  0      Rm        cond     0  0   Rn   0    nzcv
+#  0  0     CCMN (register) 32-bit
+#  0  1     CCMP (register) 32-bit
+#  1  0     CCMN (register) 64-bit
+#  1  1     CCMP (register) 64-bit
+
+CCMN A64 sf:1 0 111010010 rm:5 cond:4 00 rn:5 0 nzcv:4
+CCMP A64 sf:1 1 111010010 rm:5 cond:4 00 rn:5 0 nzcv:4
+
+# - Conditional select
+# 31 30 29 28 27 26 25 24 23 22 21 |20    16 15      12 11 10 9    5 4    0
+# sf op  S  1  1  0  1  0  1  0  0 |   Rm       cond     op2    Rn     Rd
+
+CSEL A64 sf:1 00 11010100 rm:5 cond:4 00 rn:5 rd:5
+CSINC A64 sf:1 00 11010100 rm:5 cond:4 01 rn:5 rd:5
+CSINV A64 sf:1 10 11010100 rm:5 cond:4 00 rn:5 rd:5
+CSNEG A64 sf:1 10 11010100 rm:5 cond:4 01 rn:5 rd:5
+
+# - Data-processing (1 source)
+# 31 30 29 28 27 26 25 24 23 22 21 |20         16 15        10 9    5 4    0
+# sf  1  S  1  1  0  1  0  1  1  0 |   opcode2       opcode      Rn     Rd
+
+RBIT A64 sf:1 10 11010110 00000 000000 rn:5 rd:5
+REV16 A64 sf:1 10 11010110 00000 000001 rn:5 rd:5
+REV32 A64 sf:1 10 11010110 00000 000010 rn:5 rd:5
+CLZ A64 sf:1 10 11010110 00000 000100 rn:5 rd:5
+CLS A64 sf:1 10 11010110 00000 000101 rn:5 rd:5
+REV A64 1 10 11010110 00000 000011 rn:5 rd:5
+
+# - Data-processing (2 source)
+# 31 30 29 28 27 26 25 24 23 22 21 |20    16 15        10 9    5 4    0
+# sf  0  S  1  1  0  1  0  1  1  0 |   Rm       opcode      Rn     Rd
+
+UDIV A64 sf:1 00 11010110 rm:5 000010 rn:5 rd:5
+SDIV A64 sf:1 00 11010110 rm:5 000011 rn:5 rd:5
+LSLV A64 sf:1 00 11010110 rm:5 001000 rn:5 rd:5
+LSRV A64 sf:1 00 11010110 rm:5 001001 rn:5 rd:5
+ASRV A64 sf:1 00 11010110 rm:5 001010 rn:5 rd:5
+RORV A64 sf:1 00 11010110 rm:5 001011 rn:5 rd:5
+
+# CRC32 availability is implementation-defined
+CRC32 A64 sf 00 11010110 rm:5 010 0 sz:2 rn:5 rd:5
+CRC32C A64 sf 00 11010110 rm:5 010 1 sz:2 rn:5 rd:5
+
+# - Data-processing (3 source)
+# 31 |30 29| 28 27 26 25 24 |23    21|20    16 15 14    10 9    5 4    0
+# sf | op54|  1  1  0  1  1 |  op31  |   Rm    o0    Ra      Rn     Rd
+
+MADD A64 sf:1 00 11011 000 rm:5 0 ra:5 rn:5 rd:5 \
+!constraints { $ra != 31; }
+
+MUL A64 sf:1 00 11011 000 rm:5 0 11111 rn:5 rd:5
+
+MSUB A64 sf:1 00 11011 000 rm:5 1 ra:5 rn:5 rd:5 \
+!constraints { $ra != 31; }
+
+MNEG A64 sf:1 00 11011 000 rm:5 1 11111 rn:5 rd:5
+
+SMADDL A64 1 00 11011 001 rm:5 0 ra:5 rn:5 rd:5 \
+!constraints { $ra != 31; }
+
+SMULL A64 1 00 11011 001 rm:5 0 11111 rn:5 rd:5
+
+SMSUBL A64 1 00 11011 001 rm:5 1 ra:5 rn:5 rd:5 \
+!constraints { $ra != 31; }
+
+SMNEGL A64 1 00 11011 001 rm:5 1 11111 rn:5 rd:5
+
+SMULH A64 1 00 11011 010 rm:5 0 11111 rn:5 rd:5
+
+UMADDL A64 1 00 11011 101 rm:5 0 ra:5 rn:5 rd:5 \
+!constraints { $ra != 31; }
+
+UMULL A64 1 00 11011 101 rm:5 0 11111 rn:5 rd:5
+
+UMSUBL A64 1 00 11011 101 rm:5 1 ra:5 rn:5 rd:5 \
+!constraints { $ra != 31; }
+
+UMNEGL A64 1 00 11011 101 rm:5 1 11111 rn:5 rd:5
+
+UMULH A64 1 00 11011 110 rm:5 0 11111 rn:5 rd:5
+
+# - Logical (shifted register)
+# 31|30 29| 28 27 26 25 24 |23 22| 21| 20    16 15      10 9    5 4    0
+# sf| opc |  0  1  0  1  0 |shift|  N|    Rm       imm6      Rn     Rd
+
+AND A64 sf:1 00 01010 shft:2 0 rm:5 imm:6 rn:5 rd:5 \
+!constraints { $sf == 1 || $imm <= 0x1f; }
+# ReservedValue: break the ($imm <= 0x1f) constraint
+AND_RES A64 0 00 01010 shft:2 0 rm:5 1 imm:5 rn:5 rd:5
+
+BIC A64 sf:1 00 01010 shft:2 1 rm:5 imm:6 rn:5 rd:5 \
+!constraints { $sf == 1 || $imm <= 0x1f; }
+# ReservedValue: break the ($imm <= 0x1f) constraint
+BIC_RES A64 0 00 01010 shft:2 1 rm:5 1 imm:5 rn:5 rd:5
+
+ORR A64 sf:1 01 01010 shft:2 0 rm:5 imm:6 rn:5 rd:5 \
+!constraints { $sf == 1 || $imm <= 0x1f; }
+# ReservedValue: break the ($imm <= 0x1f) constraint
+ORR_RES A64 0 01 01010 shft:2 0 rm:5 1 imm:5 rn:5 rd:5
+
+ORN A64 sf:1 01 01010 shft:2 1 rm:5 imm:6 rn:5 rd:5 \
+!constraints { $rn != 31 && ($sf == 1 || $imm <= 0x1f); }
+# ReservedValue: break the ($imm <= 0x1f) constraint
+ORN_RES A64 0 01 01010 shft:2 1 rm:5 1 imm:5 rn:5 rd:5
+
+MVN A64 sf:1 01 01010 shft:2 1 rm:5 imm:6 11111 rd:5 \
+!constraints { $sf == 1 || $imm <= 0x1f; }
+# ReservedValue: break the ($imm <= 0x1f) constraint
+MVN_RES A64 0 01 01010 shft:2 1 rm:5 1 imm:5 11111 rd:5
+
+EOR A64 sf:1 10 01010 shft:2 0 rm:5 imm:6 rn:5 rd:5 \
+!constraints { $sf == 1 || $imm <= 0x1f; }
+# ReservedValue: break the ($imm <= 0x1f) constraint
+EOR_RES A64 0 10 01010 shft:2 0 rm:5 1 imm:5 rn:5 rd:5
+
+EON A64 sf:1 10 01010 shft:2 1 rm:5 imm:6 rn:5 rd:5 \
+!constraints { $sf == 1 || $imm <= 0x1f; }
+# ReservedValue: break the ($imm <= 0x1f) constraint
+EON_RES A64 0 10 01010 shft:2 1 rm:5 1 imm:5 rn:5 rd:5
+
+ANDS A64 sf:1 11 01010 shft:2 0 rm:5 imm:6 rn:5 rd:5 \
+!constraints { $sf == 1 || $imm <= 0x1f; }
+# ReservedValue: break the ($imm <= 0x1f) constraint
+ANDS_RES A64 0 11 01010 shft:2 0 rm:5 1 imm:5 rn:5 rd:5
+
+BICS A64 sf:1 11 01010 shft:2 1 rm:5 imm:6 rn:5 rd:5 \
+!constraints { $sf == 1 || $imm <= 0x1f; }
+# ReservedValue: break the ($imm <= 0x1f) constraint
+BICS_RES A64 0 11 01010 shft:2 1 rm:5 1 imm:5 rn:5 rd:5
+
+@
+# End of Data Processing - Register
+
+# Data processing - SIMD and floating point
+# Data processing - Scalar Floating-Point and Advanced SIMD
+#
+# 31   28 | 27 26 25 | 24 23 | 22   19 | 18   10 | 9         0
+#   op0   |  1  1  1 |  op1  |   op2   |   op3   |
+@DataProcessingScalarFP,DataProcessingAdvSIMD
+
+# - Advanced SIMD Extract
+# 31 30 29 28 27 26 25 24 23 22 21 20  16|15|14    11|10|9  5 4  0
+#  0  Q  1  0  1  1  1  0  0  0  0   Rm  | 0|  imm4  | 0| Rn   Rd
+
+# XXX BUG in objdump / libopcode? $Q==1 && $imm & 0x08 should be allowed,
+# instead the instruction shows as undefined. Check again with latest objdump.
+# problem encountered with linaro aarch64 cross objdump
+# crosstool-NG linaro-1.13.1-4.7-2013.01-20130125 - 2.23.51.20121016
+# XXX
+# 1a59c:       6e0e72f9        .inst   0x6e0e72f9 ; undefined [XXX]
+
+EXT A64_V      0 Q:1 101110000 rm:5 0  imm:4 0 rn:5 rd:5 \
+!constraints { $Q == 0 || !(($imm & 0x08) > 0); }
+EXT_RES A64_V  0 0   101110000 rm:5 01 imm:3 0 rn:5 rd:5
+
+# - Advanced SIMD table lookup
+# 31 30 29 28 27 26 25 24 23 22 21 20  16 15 14 13 12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  1  0  0  0  0   Rm    0  len  op  0  0  Rn   Rd
+
+TBL A64_V 0 Q:1 001110000 rm:5 0 len:2 0 00 rn:5 rd:5
+TBX A64_V 0 Q:1 001110000 rm:5 0 len:2 1 00 rn:5 rd:5
+
+# - Advanced SIMD permute
+# 31 30 29 28 27 26 25 24 23 22 21 20  16 15 14   12 11 10 9  5 4  0
+#  0  Q  0  0  1  1  1  0  size  0   Rm    0 opcode   1  0  Rn   Rd
+
+UZP1 A64_V 0 Q:1 001110 size:2 0 rm:5 0 001 10 rn:5 rd:5 \
+!constraints { !($size == 3 && $Q == 0); }
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+UZP1_RES A64_V 0 0 001110 11 0 rm:5 0 001 10 rn:5 rd:5
+
+TRN1 A64_V 0 Q:1 001110 size:2 0 rm:5 0 010 10 rn:5 rd:5 \
+!constraints { !($size == 3 && $Q == 0); }
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+TRN1_RES A64_V 0 0 001110 11 0 rm:5 0 010 10 rn:5 rd:5
+
+ZIP1 A64_V 0 Q:1 001110 size:2 0 rm:5 0 011 10 rn:5 rd:5 \
+!constraints { !($size == 3 && $Q == 0); }
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+ZIP1_RES A64_V 0 0 001110 11 0 rm:5 0 011 10 rn:5 rd:5
+
+UZP2 A64_V 0 Q:1 001110 size:2 0 rm:5 0 101 10 rn:5 rd:5 \
+!constraints { !($size == 3 && $Q == 0); }
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+UZP2_RES A64_V 0 0 001110 11 0 rm:5 0 101 10 rn:5 rd:5
+
+TRN2 A64_V 0 Q:1 001110 size:2 0 rm:5 0 110 10 rn:5 rd:5 \
+!constraints { !($size == 3 && $Q == 0); }
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+TRN2_RES A64_V 0 0 001110 11 0 rm:5 0 110 10 rn:5 rd:5
+
+ZIP2 A64_V 0 Q:1 001110 size:2 0 rm:5 0 111 10 rn:5 rd:5 \
+!constraints { !($size == 3 && $Q == 0); }
+# ReservedValue: break the !($size == 3 && $Q == 0) constraint
+ZIP2_RES A64_V 0 0 001110 11 0 rm:5 0 111 10 rn:5 rd:5
+
+# - Advanced SIMD across lanes
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16  12 11 10 9  5 4  0
+#  0  Q  U  0  1  1  1  0  size  1  1  0  0  0 opcode  1  0  Rn   Rd
+
+ADDV         A64_V 0 Q:1 0 01110 s:2 11000 11011 10 rn:5 rd:5 \
+!constraints { $s < 2 || ($s == 2 && $Q == 1); }
+# ReservedValue: break the constraint (s==2) => (Q=1)
+ADDV_RES     A64_V 0  0  0 01110  10 11000 11011 10 rn:5 rd:5
+
+FMAXNMV      A64_V 0  1  1 01110  00 11000 01100 10 rn:5 rd:5
+FMAXV        A64_V 0  1  1 01110  00 11000 01111 10 rn:5 rd:5
+FMINNMV      A64_V 0  1  1 01110  10 11000 01100 10 rn:5 rd:5
+FMINV        A64_V 0  1  1 01110  10 11000 01111 10 rn:5 rd:5
+
+SADDLV       A64_V 0 Q:1 0 01110 s:2 11000 00011 10 rn:5 rd:5 \
+!constraints { $s < 2 || ($s == 2 && $Q == 1); }
+# ReservedValue: break the constraint (s==2) => (Q=1)
+SADDLV_RES   A64_V 0   0 0 01110  10 11000 00011 10 rn:5 rd:5
+
+SMAXV        A64_V 0 Q:1 0 01110 s:2 11000 01010 10 rn:5 rd:5 \
+!constraints { $s < 2 || ($s == 2 && $Q == 1); }
+# ReservedValue: break the constraint (s==2) => (Q=1)
+SMAXV_RES    A64_V 0   0 0 01110  10 11000 01010 10 rn:5 rd:5
+
+SMINV        A64_V 0 Q:1 0 01110 s:2 11000 11010 10 rn:5 rd:5 \
+!constraints { $s < 2 || ($s == 2 && $Q == 1); }
+# ReservedValue: break the constraint (s==2) => (Q=1)
+SMINV_RES    A64_V 0   0 0 01110  10 11000 11010 10 rn:5 rd:5
+
+UADDLV       A64_V 0 Q:1 1 01110 s:2 11000 00011 10 rn:5 rd:5 \
+!constraints { $s < 2 || ($s == 2 && $Q == 1); }
+# ReservedValue: break the constraint (s==2) => (Q=1)
+UADDLV_RES   A64_V 0   0 1 01110  10 11000 00011 10 rn:5 rd:5
+
+UMAXV        A64_V 0 Q:1 1 01110 s:2 11000 01010 10 rn:5 rd:5 \
+!constraints { $s < 2 || ($s == 2 && $Q == 1); }
+# ReservedValue: break the constraint (s==2) => (Q=1)
+UMAXV_RES    A64_V 0   0 1 01110  10 11000 01010 10 rn:5 rd:5
+
+UMINV        A64_V 0 Q:1 1 01110 s:2 11000 11010 10 rn:5 rd:5 \
+!constraints { $s < 2 || ($s == 2 && $Q == 1); }
+# ReservedValue: break the constraint (s==2) => (Q=1)
+UMINV_RES    A64_V 0   0 1 01110  10 11000 11010 10 rn:5 rd:5
+
+# - Advanced SIMD copy
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15 14    11 10 9  5 4  0
+#  0  Q op  0  1  1  1  0  0  0  0   imm5    0   imm4    1  Rn   Rd
+@DataProcessingAdvSIMD,AdvSIMDCopy
+
+DUPe A64_V 0 Q:1 0 01110000 imm:5 0 0000 1 rn:5 rd:5 \
+!constraints { ($imm & 0x07) > 0 || (($imm & 0x0f) > 0 && $Q == 1); }
+# ReservedValue: break the constraint (imm & 0x0f) => (Q == 1)
+DUPe_RES1 A64_V 0 0 0 01110000 imm:1 1000 0 0000 1 rn:5 rd:5
+# ReservedValue: break the constraint ((imm & 0x0f) != 0)
+DUPe_RES2 A64_V 0 Q:1 0 01110000 imm:1 0000 0 0000 1 rn:5 rd:5
+
+DUP A64_V 0 Q:1 0 01110000 imm:5 0 0001 1 rn:5 rd:5 \
+!constraints { ($imm & 0x07) > 0 || (($imm & 0x0f) > 0 && $Q == 1); }
+# ReservedValue: break the constraint (imm & 0x0f) => (Q == 1)
+DUP_RES1 A64_V 0 0 0 01110000 imm:1 1000 0 0001 1 rn:5 rd:5
+# ReservedValue: break the constraint ((imm & 0x0f) != 0)
+DUP_RES2 A64_V 0 Q:1 0 01110000 imm:1 0000 0 0001 1 rn:5 rd:5
+
+SMOV A64_V 0 Q:1 0 01110000 imm:5 0 0101 1 rn:5 rd:5 \
+!constraints { ($imm & 0x03) > 0 || (($imm & 0x07) > 0 && $Q == 1); }
+# ReservedValue: break the constraint (imm & 0x07) => (Q == 1)
+SMOV_RES1 A64_V 0 0 0 01110000 imm:2 100 0 0101 1 rn:5 rd:5
+# ReservedValue: break the constraint ((imm & 0x07) != 0)
+SMOV_RES2 A64_V 0 Q:1 0 01110000 imm:2 000 0 0101 1 rn:5 rd:5
+
+UMOV A64_V 0 Q:1 0 01110000 imm:5 0 0111 1 rn:5 rd:5 \
+!constraints { ($Q == 0 && ($imm & 0x07) > 0) || ($Q == 1 && (($imm & 0x0f) == 0x80)); }
+# ReservedValue: break the constraint ($Q == 0) => ($imm & 0x07)
+UMOV_RES1 A64_V 0 0 0 01110000 imm:2 000 0 0111 1 rn:5 rd:5
+# ReservedValue: break the constraint ($Q == 1) => (($imm & 0x0f) == 0x80)
+UMOV_RES2 A64_V 0 1 0 01110000 imm:5 0 0111 1 rn:5 rd:5 \
+!constraints { ($imm & 0x0f) != 0x80; }
+
+INS A64_V 0 1 0 01110000 imm:5 0 0011 1 rn:5 rd:5 \
+!constraints { ($imm & 0x0f) > 0; }
+# ReservedValue: break the constraint ($imm & 0x0f)
+INS_RES A64_V 0 1 0 01110000 imm:1 0000 0 0011 1 rn:5 rd:5
+
+INSe A64_V 0 1 1 01110000 imm:5 0 immm:4 1 rn:5 rd:5 \
+!constraints { ($imm & 0x0f) > 0; }
+# ReservedValue: break the constraint ($imm & 0x0f)
+INSe_RES A64_V 0 1 1 01110000 imm:1 0000 0 immm:4 1 rn:5 rd:5
+
+@DataProcessingScalarFP,DataProcessingAdvSIMD
+
+# - Advanced SIMD modified immediate
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18   16 15   12 11 10  9   5 4  0
+#  0  Q op  0  1  1  1  1  0  0  0  0  0 [ abc ] [cmode] o2  1 [defgh] Rd
+#                                                       [ 0]
+# MOVI move immediate (vector)
+MOVI A64_V 0 Q:1 op:1 0111100000 abc:3 cm:4 01 defgh:5 rd:5 \
+!constraints { \
+($op == 0 && $cm != 1 && $cm != 3 && $cm != 5 && $cm != 7 && $cm != 9 && $cm != 11 && $cm != 15) \
+|| ($op == 1 && $cm == 14); \
+}
+
+# MVNI move inverted immediate (vector)
+MVNI A64_V 0 Q:1 1 0111100000 abc:3 cm:4 01 defgh:5 rd:5 \
+!constraints { \
+($cm == 2 || $cm == 4 || $cm == 6 || $cm == 8 || $cm == 10 || $cm == 12 || $cm == 13); \
+}
+
+# ORR (vector, immediate)
+ORRiv A64_V 0 Q:1 0 0111100000 abc:3 cmode:3 1 01 defgh:5 rd:5 \
+!constraints { $cmode <= 5; }
+
+# FMOV (vector, immediate)
+FMOViv A64_V 0 Q:1 op:1 0111100000 abc:3 1111 01 defgh:5 rd:5 \
+!constraints { $op == 0 || $Q == 1; }
+
+# UnallocatedEncoding() op==1 with Q==0
+FMOViv_RES A64_V 0 0 1 0111100000 abc:3 1111 01 defgh:5 rd:5
+
+# BIC (vector, immediate)
+# 31  30   29                    19  18 16   15   12 11 10 9     5   4  0
+#  0 [ Q ]  1 0 1 1 1 1 1 0 0 0 0 0 [ abc ] [ cmode ] 0 1 [ defgh ] [ Rd ]
+BICiv A64_V 0 Q:1 1 0111100000 abc:3 cm:4 01 defgh:5 rd:5 \
+!constraints { $cm <= 11 && ($cm & 0x1) == 1; }
+
+# Advanced SIMD scalar copy
+# Includes just one instruction (DUP element); this pattern includes
+# all the reserved stuff for bad imm4 and op values
+DUPes A64_V 0 1 op 1111 0000 imm5:5 0 imm4:4 1 rn:5 rd:5
+
+# Advanced SIMD scalar pairwise
+# Includes all ops and reserved patterns
+SCALARPAIR A64_V 0 1 U 11110 size:2 11000 opcode:5 10 rn:5 rd:5
+
+# Advanced SIMD scalar shift by immediate
+#
+# 31 30 29 28 27 26 25 24 23 22    19 18    16 15      11 10 9      5 4      0
+#  0  1 U   1  1  1  1  1  0 [ immh ] [ immb ] [ opcode ]  1 [  Rn  ] [  Rd  ]
+
+# Generic definitions to cover all the options
+SHIFTis A64_V  01 U:1 111110 immh:4 immb:3 opcode:5 1 rn:5 rd:5 \
+!constraints { \
+($immh != 0) && \
+($opcode == 0 || $opcode == 2 || $opcode == 4 || $opcode == 6 || $opcode == 10); \
+}
+SHIFTRis A64_V  01 U:1 111110 immh:4 immb:3 opcode:5 1 rn:5 rd:5 \
+!constraints { \
+($immh != 0) && \
+($opcode == 0 || $opcode == 2 || $opcode == 4 || $opcode == 6); \
+}
+
+# Individual instructions
+SCVTF_SSI A64_V 0 1 0 111110 immh:4 immb:3 11100 1 rn:5 rd:5 !constraints { $immh != 0; }
+UCVTF_SSI A64_V 0 1 1 111110 immh:4 immb:3 11100 1 rn:5 rd:5 !constraints { $immh != 0; }
+FCVTZS_SSI A64_V 0 1 0 111110 immh:4 immb:3 11111 1 rn:5 rd:5 !constraints { $immh != 0; }
+FCVTZU_SSI A64_V 0 1 1 111110 immh:4 immb:3 11111 1 rn:5 rd:5 !constraints { $immh != 0; }
+
+SQSHL_SSI A64_V 0 1 0 111110 immh:4 immb:3 01110 1 rn:5 rd:5 !constraints { $immh != 0; }
+UQSHL_SSI A64_V 0 1 1 111110 immh:4 immb:3 01110 1 rn:5 rd:5 !constraints { $immh != 0; }
+SQSHRN_SSI A64_V 0 1 0 111110 immh:4 immb:3 10010 1 rn:5 rd:5 !constraints { $immh != 0; }
+UQSHRN_SSI A64_V 0 1 1 111110 immh:4 immb:3 10010 1 rn:5 rd:5 !constraints { $immh != 0; }
+SQRSHRN_SSI A64_V 0 1 0 111110 immh:4 immb:3 10011 1 rn:5 rd:5 !constraints { $immh != 0; }
+UQRSHRN_SSI A64_V 0 1 1 111110 immh:4 immb:3 10011 1 rn:5 rd:5 !constraints { $immh != 0; }
+SRI_SSI A64_V 0 1 1 111110 immh:4 immb:3 01000 1 rn:5 rd:5 !constraints { $immh != 0; }
+SQSHLU_SSI A64_V 0 1 1 111110 immh:4 immb:3 01100 1 rn:5 rd:5 !constraints { $immh != 0; }
+SQSHRUN_SSI A64_V 0 1 1 111110 immh:4 immb:3 10000 1 rn:5 rd:5 !constraints { $immh != 0; }
+SQRSHRUN_SSI A64_V 0 1 1 111110 immh:4 immb:3 10001 1 rn:5 rd:5 !constraints { $immh != 0; }
+
+# Advanced SIMD scalar three different
+# Complete coverage.
+SQDMLAL_S3D A64_V 0 1 U 11110 size:2 1 rm:5 1001 00 rn:5 rd:5
+SQDMLSL_S3D A64_V 0 1 U 11110 size:2 1 rm:5 1011 00 rn:5 rd:5
+SQDMULL_S3D A64_V 0 1 U 11110 size:2 1 rm:5 1101 00 rn:5 rd:5
+
+# Advanced SIMD scalar three same
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15      11 10  9    5   4    0
+#  0  1 U   1  1  1  1  0  size  1 [  Rm  ] [ opcode ]  1 [  Rn  ] [  Rd  ]
+#
+@DataProcessingAdvSIMD,AdvSIMDScalar3Same
+
+SQADD    A64_V   01 0 11110 size:2 1 rm:5 00001 1 rn:5 rd:5
+SQSUB    A64_V   01 0 11110 size:2 1 rm:5 00101 1 rn:5 rd:5
+CMGT     A64_V   01 0 11110 size:2 1 rm:5 00110 1 rn:5 rd:5
+CMGE     A64_V   01 0 11110 size:2 1 rm:5 00111 1 rn:5 rd:5
+SSHL     A64_V   01 0 11110 size:2 1 rm:5 01000 1 rn:5 rd:5
+SQSHL    A64_V   01 0 11110 size:2 1 rm:5 01001 1 rn:5 rd:5
+ADDsv    A64_V   01 0 11110 11     1 rm:5 10000 1 rn:5 rd:5
+ADDsv_res A64_V   01 0 11110 size:2 1 rm:5 10000 1 rn:5 rd:5 \
+!constraints { $size != 11; }
+
+CMTST    A64_V   01 0 11110 size:2 1 rm:5 10001 1 rn:5 rd:5
+SQDMULH  A64_V   01 0 11110 size:2 1 rm:5 10110 1 rn:5 rd:5
+FMULX    A64_V   01 0 11110 0 size:1 1 rm:5 11011 1 rn:5 rd:5
+FCMEQ    A64_V   01 0 11110 0 size:1 1 rm:5 11100 1 rn:5 rd:5
+FRECPS   A64_V   01 0 11110 0 size:1 1 rm:5 11111 1 rn:5 rd:5
+FRSQRTS  A64_V   01 0 11110 1 size:1 1 rm:5 11111 1 rn:5 rd:5
+UQADD    A64_V   01 1 11110 size:2 1 rm:5 00001 1 rn:5 rd:5
+UQSUB    A64_V   01 1 11110 size:2 1 rm:5 00101 1 rn:5 rd:5
+CMHI     A64_V   01 1 11110 size:2 1 rm:5 00110 1 rn:5 rd:5
+CMHS     A64_V   01 1 11110 size:2 1 rm:5 00111 1 rn:5 rd:5
+USHL     A64_V   01 1 11110 size:2 1 rm:5 01000 1 rn:5 rd:5
+UQSHL    A64_V   01 1 11110 size:2 1 rm:5 01001 1 rn:5 rd:5
+URSHL    A64_V   01 1 11110 size:2 1 rm:5 01010 1 rn:5 rd:5
+UQRSHL   A64_V   01 1 11110 size:2 1 rm:5 01011 1 rn:5 rd:5
+SUBsv    A64_V   01 1 11110 size:2 1 rm:5 10000 1 rn:5 rd:5
+SUBsv_RES A64_V   01 1 11110 size:2 1 rm:5 10000 1 rn:5 rd:5 \
+!constraints { $size != 11; }
+
+CMEQ     A64_V   01 1 11110 size:2 1 rm:5 10001 1 rn:5 rd:5
+SQRDMULH A64_V   01 1 11110 size:2 1 rm:5 10110 1 rn:5 rd:5
+FCMGE    A64_V   01 1 11110 0 size:1 1 rm:5 11100 1 rn:5 rd:5
+FACGE    A64_V   01 1 11110 0 size:1 1 rm:5 11101 1 rn:5 rd:5
+FABD     A64_V   01 1 11110 1 size:1 1 rm:5 11010 1 rn:5 rd:5
+FCMGT    A64_V   01 1 11110 1 size:1 1 rm:5 11100 1 rn:5 rd:5
+FACGT    A64_V   01 1 11110 1 size:1 1 rm:5 11101 1 rn:5 rd:5 \
+!constraints { $size != 11; }
+
+@DataProcessingAdvSIMD
+
+# Advanced SIMD scalar two-register miscellaneous
+# 31 30 29 28 27 26 25 24 23 22 21 20      16     12 11 10 9     5  4    0
+#  0  1 U   1  1  1  1  0  size  1 0 0 0 0 [ opcode ] 1 0 [  Rn  ] [  Rd  ]
+# U size opcode
+@DataProcessingAdvSIMD,AdvSIMDScalar2RegMisc
+
+ABSs  A64_V             01 0 11110   size:2 10000 01011 10 rn:5 rd:5
+CMEQzs  A64_V           01 0 11110   size:2 10000 01001 10 rn:5 rd:5
+CMGTzs  A64_V           01 0 11110   size:2 10000 01000 10 rn:5 rd:5
+CMGzs  A64_V            01 1 11110   size:2 10000 01000 10 rn:5 rd:5
+CMLEzs  A64_V           01 1 11110   size:2 10000 01001 10 rn:5 rd:5
+CMLTzs  A64_V           01 0 11110   size:2 10000 01010 10 rn:5 rd:5
+FCMEQzs  A64_V          01 0 11110 1 size:1 10000 01101 10 rn:5 rd:5
+FCMGEzs  A64_V          01 1 11110 1 size:1 10000 01100 10 rn:5 rd:5
+FCMGTzs  A64_V          01 0 11110 1 size:1 10000 01100 10 rn:5 rd:5
+FCMLEzs  A64_V          01 1 11110 1 size:1 10000 01101 10 rn:5 rd:5
+FCMLTzs  A64_V          01 0 11110 1 size:1 10000 01110 10 rn:5 rd:5
+FCVTASvs  A64_V         01 0 11110 0 size:1 10000 11100 10 rn:5 rd:5
+FCVTAUvs  A64_V         01 1 11110 0 size:1 10000 11100 10 rn:5 rd:5
+FCVTMSvs  A64_V         01 0 11110 0 size:1 10000 11011 10 rn:5 rd:5
+FCVTMUvs  A64_V         01 1 11110 0 size:1 10000 11011 10 rn:5 rd:5
+FCVTNSvs  A64_V         01 0 11110 0 size:1 10000 11010 10 rn:5 rd:5
+FCVTNUvs  A64_V         01 1 11110 0 size:1 10000 11010 10 rn:5 rd:5
+FCVTPSvs  A64_V         01 0 11110 1 size:1 10000 11010 10 rn:5 rd:5
+FCVTPUvs  A64_V         01 1 11110 1 size:1 10000 11010 10 rn:5 rd:5
+FCVTXN_FCVTXN2s  A64_V  01 1 11110 0 size:1 10000 10110 10 rn:5 rd:5
+FCVTZSvis  A64_V        01 0 11110 1 size:1 10000 11011 10 rn:5 rd:5
+FCVTZUvis  A64_V        01 1 11110 1 size:1 10000 11011 10 rn:5 rd:5
+FRECPEs  A64_V          01 0 11110 1 size:1 10000 11101 10 rn:5 rd:5
+FRECPX  A64_V           01 0 11110 1 size:1 10000 11111 10 rn:5 rd:5
+FRSQRTEs  A64_V         01 1 11110 1 size:1 10000 11101 10 rn:5 rd:5
+NEGvs  A64_V            01 1 11110   size:2 10000 01011 10 rn:5 rd:5
+SCVTFvis  A64_V         01 0 11110 0 size:1 10000 11101 10 rn:5 rd:5
+SQABSs  A64_V           01 0 11110   size:2 10000 00111 10 rn:5 rd:5
+SQNEGs  A64_V           01 1 11110   size:2 10000 00111 10 rn:5 rd:5
+SQXTN_SQXTN2s  A64_V    01 0 11110   size:2 10000 10100 10 rn:5 rd:5
+SQXTUN_SQXTUN2s  A64_V  01 1 11110   size:2 10000 10010 10 rn:5 rd:5
+SUQADDs  A64_V          01 0 11110   size:2 10000 00011 10 rn:5 rd:5
+UCVTFvis  A64_V         01 1 11110 0 size:1 10000 11101 10 rn:5 rd:5
+UQXTN_UQXTN2s  A64_V    01 1 11110   size:2 10000 10100 10 rn:5 rd:5
+USQADDs  A64_V          01 1 11110   size:2 10000 00011 10 rn:5 rd:5
+
+@DataProcessingAdvSIMD
+
+# Advanced SIMD scalar x indexed element
+# Complete coverage.
+
+# Long ops
+SQDMLAL_SIDX A64_V 0 1 U 11111 sz:2 l m rm:4 0011 h 0 rn:5 rd:5
+SQDMLSL_SIDX A64_V 0 1 U 11111 sz:2 l m rm:4 0111 h 0 rn:5 rd:5
+SQDMULL_SIDX A64_V 0 1 U 11111 sz:2 l m rm:4 1011 h 0 rn:5 rd:5
+
+# Not long:
+SQDMULH_SIDX A64_V 0 1 U 11111 sz:2 l m rm:4 1100 h 0 rn:5 rd:5
+SQRDMULH_SIDX A64_V 0 1 U 11111 sz:2 l m rm:4 1101 h 0 rn:5 rd:5
+FMLA_SIDX A64_V 0 1 U 11111 sz:2 l m rm:4 0001 h 0 rn:5 rd:5
+FMLS_SIDX A64_V 0 1 U 11111 sz:2 l m rm:4 0101 h 0 rn:5 rd:5
+FMUL_FMULX_SIDX A64_V 0 1 U 11111 sz:2 l m rm:4 1001 h 0 rn:5 rd:5
+
+# Advanced SIMD shift by immediate
+# 31 30 29 28 27 26 25 24 23 22    19 18    16 15      11 10 9      5 4      0
+#  0  Q U   0  1  1  1  1  0 [ immh ] [ immb ] [ opcode ]  1 [  Rn  ] [  Rd  ]
+
+# Generic patterns for all the shift ops we do
+SHIFTiv A64_V  0 Q:1 U:1 011110 immh:4 immb:3 opcode:5 1 rn:5 rd:5 \
+!constraints { \
+($opcode == 0 || $opcode == 2 || $opcode == 4 || $opcode == 6 || $opcode == 10 || $opcode == 20); \
+}
+
+# All the actual ops. Generally the *2 ops have q=1
+SSHRv      A64_V 0 q:1 0 011110 immh:4 immb:3 00000 1 rn:5 rd:5 
+SSRAv      A64_V 0 q:1 0 011110 immh:4 immb:3 00010 1 rn:5 rd:5 
+SRSHRv     A64_V 0 q:1 0 011110 immh:4 immb:3 00100 1 rn:5 rd:5 
+SRSRAv     A64_V 0 q:1 0 011110 immh:4 immb:3 00110 1 rn:5 rd:5 
+SHLv       A64_V 0 q:1 0 011110 immh:4 immb:3 01010 1 rn:5 rd:5 
+SQSHLvi    A64_V 0 q:1 0 011110 immh:4 immb:3 01110 1 rn:5 rd:5 
+SHRN       A64_V 0 q:1 0 011110 immh:4 immb:3 10000 1 rn:5 rd:5 
+SHRN2      A64_V 0 q:1 0 011110 immh:4 immb:3 10000 1 rn:5 rd:5 
+RSHRN      A64_V 0 q:1 0 011110 immh:4 immb:3 10001 1 rn:5 rd:5 
+#RSHRN2     A64_V 0 q:1 0 011110 immh:4 immb:3 10001 1 rn:5 rd:5 
+SQSHRNv    A64_V 0 q:1 0 011110 immh:4 immb:3 10010 1 rn:5 rd:5 
+#SQSHRN2v   A64_V 0 q:1 0 011110 immh:4 immb:3 10010 1 rn:5 rd:5 
+SQRSHRNv   A64_V 0 q:1 0 011110 immh:4 immb:3 10011 1 rn:5 rd:5 
+#SQRSHRN2v  A64_V 0 q:1 0 011110 immh:4 immb:3 10011 1 rn:5 rd:5 
+SSHLL      A64_V 0 q:1 0 011110 immh:4 immb:3 10100 1 rn:5 rd:5 
+SSHLL2     A64_V 0 q:1 0 011110 immh:4 immb:3 10100 1 rn:5 rd:5 
+SCVTFvf    A64_V 0 q:1 0 011110 immh:4 immb:3 11100 1 rn:5 rd:5 
+FCVTZSvf   A64_V 0 q:1 0 011110 immh:4 immb:3 11111 1 rn:5 rd:5 
+USHRv      A64_V 0 q:1 1 011110 immh:4 immb:3 00000 1 rn:5 rd:5 
+USRAv      A64_V 0 q:1 1 011110 immh:4 immb:3 00010 1 rn:5 rd:5 
+URSHRv     A64_V 0 q:1 1 011110 immh:4 immb:3 00100 1 rn:5 rd:5 
+URSRAv     A64_V 0 q:1 1 011110 immh:4 immb:3 00110 1 rn:5 rd:5 
+SRIv       A64_V 0 q:1 1 011110 immh:4 immb:3 01000 1 rn:5 rd:5 
+SLIv       A64_V 0 q:1 1 011110 immh:4 immb:3 01010 1 rn:5 rd:5 
+SQSHLUv    A64_V 0 q:1 1 011110 immh:4 immb:3 01100 1 rn:5 rd:5 
+UQSHLvi    A64_V 0 q:1 1 011110 immh:4 immb:3 01110 1 rn:5 rd:5 
+SQSHRUNv   A64_V 0 q:1 1 011110 immh:4 immb:3 10000 1 rn:5 rd:5 
+#SQSHRUN2v  A64_V 0 q:1 1 011110 immh:4 immb:3 10000 1 rn:5 rd:5 
+SQRSHRUNv  A64_V 0 q:1 1 011110 immh:4 immb:3 10001 1 rn:5 rd:5 
+#SQRSHRUN2v A64_V 0 q:1 1 011110 immh:4 immb:3 10001 1 rn:5 rd:5 
+UQSHRNv    A64_V 0 q:1 1 011110 immh:4 immb:3 10010 1 rn:5 rd:5 
+UQRSHRNv   A64_V 0 q:1 1 011110 immh:4 immb:3 10011 1 rn:5 rd:5 
+#UQRSHRN2v  A64_V 0 q:1 1 011110 immh:4 immb:3 10011 1 rn:5 rd:5 
+USHLL      A64_V 0 q:1 1 011110 immh:4 immb:3 10100 1 rn:5 rd:5 
+USHLL2     A64_V 0 q:1 1 011110 immh:4 immb:3 10100 1 rn:5 rd:5 
+UCVTFvf    A64_V 0 q:1 1 011110 immh:4 immb:3 11100 1 rn:5 rd:5 
+FCVTZUvf   A64_V 0 q:1 1 011110 immh:4 immb:3 11111 1 rn:5 rd:5 
+
+#SCVTFvf_RES1 A64_V 0 Q:1 U:1 01110 immh:4 immb:3 11100 1 rn:5 rd:5
+
+SQSHRN_SI A64_V 0 Q 0 011110 immh:4 immb:3 10010 1 rn:5 rd:5 !constraints { $immh != 0; }
+SQRSHRN_SI A64_V 0 Q 0 011110 immh:4 immb:3 10011 1 rn:5 rd:5 !constraints { $immh != 0; }
+SQSHRUN_SI A64_V 0 Q 1 011110 immh:4 immb:3 10000 1 rn:5 rd:5 !constraints { $immh != 0; }
+SQRSHRUN_SI A64_V 0 Q 1 011110 immh:4 immb:3 10001 1 rn:5 rd:5 !constraints { $immh != 0; }
+UQSHRN_SI A64_V 0 Q 1 011110 immh:4 immb:3 10010 1 rn:5 rd:5 !constraints { $immh != 0; }
+UQRSHRN_SI A64_V 0 Q 1 011110 immh:4 immb:3 10011 1 rn:5 rd:5 !constraints { $immh != 0; }
+
+SRI_SI A64_V 0 Q 1 011110 immh:4 immb:3 01000 1 rn:5 rd:5 !constraints { $immh != 0; }
+
+SQSHL_SI A64_V 0 Q 0 011110 immh:4 immb:3 01110 1 rn:5 rd:5 !constraints { $immh != 0; }
+UQSHL_SI A64_V 0 Q 1 011110 immh:4 immb:3 01110 1 rn:5 rd:5 !constraints { $immh != 0; }
+SQSHLU_SI A64_V 0 Q 1 011110 immh:4 immb:3 01100 1 rn:5 rd:5 !constraints { $immh != 0; }
+
+FCVTZS_SI A64_V 0 Q 0 011110 immh:4 immb:3 11111 1 rn:5 rd:5 !constraints { $immh != 0; }
+FCVTZU_SI A64_V 0 Q 1 011110 immh:4 immb:3 11111 1 rn:5 rd:5 !constraints { $immh != 0; } 
+
+# Advanced SIMD three different
+# the '2' variants are included in the main patterns here
+SADDL A64_V   0 Q 0 0 1 1 1 0 size:2 1 rm:5 0000 00 rn:5 rd:5
+SADDW A64_V   0 Q 0 0 1 1 1 0 size:2 1 rm:5 0001 00 rn:5 rd:5
+SSUBL A64_V   0 Q 0 0 1 1 1 0 size:2 1 rm:5 0010 00 rn:5 rd:5
+SSUBW A64_V   0 Q 0 0 1 1 1 0 size:2 1 rm:5 0011 00 rn:5 rd:5
+ADDHN A64_V   0 Q 0 0 1 1 1 0 size:2 1 rm:5 0100 00 rn:5 rd:5
+SABAL A64_V   0 Q 0 0 1 1 1 0 size:2 1 rm:5 0101 00 rn:5 rd:5
+SUBHN A64_V   0 Q 0 0 1 1 1 0 size:2 1 rm:5 0110 00 rn:5 rd:5
+SABDL A64_V   0 Q 0 0 1 1 1 0 size:2 1 rm:5 0111 00 rn:5 rd:5
+SMLAL A64_V   0 Q 0 0 1 1 1 0 size:2 1 rm:5 1000 00 rn:5 rd:5
+SQDMLAL A64_V 0 Q 0 0 1 1 1 0 size:2 1 rm:5 1001 00 rn:5 rd:5
+SMLSL A64_V   0 Q 0 0 1 1 1 0 size:2 1 rm:5 1010 00 rn:5 rd:5
+SQDMLSL A64_V 0 Q 0 0 1 1 1 0 size:2 1 rm:5 1011 00 rn:5 rd:5
+SMULL A64_V   0 Q 0 0 1 1 1 0 size:2 1 rm:5 1100 00 rn:5 rd:5
+SQDMULL A64_V 0 Q 0 0 1 1 1 0 size:2 1 rm:5 1101 00 rn:5 rd:5
+PMULL A64_V   0 Q 0 0 1 1 1 0 size:2 1 rm:5 1110 00 rn:5 rd:5
+
+UADDL A64_V 0 Q 1 0 1 1 1 0 size:2 1 rm:5 0000 00 rn:5 rd:5
+UADDW A64_V 0 Q 1 0 1 1 1 0 size:2 1 rm:5 0001 00 rn:5 rd:5
+USUBL A64_V 0 Q 1 0 1 1 1 0 size:2 1 rm:5 0010 00 rn:5 rd:5
+USUBW A64_V 0 Q 1 0 1 1 1 0 size:2 1 rm:5 0011 00 rn:5 rd:5
+RADDHN A64_V 0 Q 1 0 1 1 1 0 size:2 1 rm:5 0100 00 rn:5 rd:5
+UABAL A64_V 0 Q 1 0 1 1 1 0 size:2 1 rm:5 0101 00 rn:5 rd:5
+RSUBHN A64_V 0 Q 1 0 1 1 1 0 size:2 1 rm:5 0110 00 rn:5 rd:5
+UABDL A64_V 0 Q 1 0 1 1 1 0 size:2 1 rm:5 0111 00 rn:5 rd:5
+UMLAL A64_V 0 Q 1 0 1 1 1 0 size:2 1 rm:5 1000 00 rn:5 rd:5
+UMLSL A64_V 0 Q 1 0 1 1 1 0 size:2 1 rm:5 1010 00 rn:5 rd:5
+UMULL A64_V 0 Q 1 0 1 1 1 0 size:2 1 rm:5 1100 00 rn:5 rd:5
+
+# these don't have U=1 variants
+PMULL_RES A64_V 0 Q 1 0 1 1 1 0 size:2 1 rm:5 1110 00 rn:5 rd:5
+SQDMLAL_RES A64_V 0 Q 1 0 1 1 1 0 size:2 1 rm:5 1001 00 rn:5 rd:5
+SQDMLSL_RES A64_V 0 Q 1 0 1 1 1 0 size:2 1 rm:5 1011 00 rn:5 rd:5
+SQDMULL_RES A64_V 0 Q 1 0 1 1 1 0 size:2 1 rm:5 1101 00 rn:5 rd:5
+# opcode 1111 unallocated
+SIMD_3D_RES A64_V 0 Q U 0 1 1 1 0 size:2 1 rm:5 1111 00 rn:5 rd:5
+
+# Advanced SIMD three same
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15      11 10  9    5   4    0
+#  0  Q  U  0  1  1  1  0  size  1 [  Rm  ] [ opcode ]  1 [  Rn  ] [  Rd  ]
+SHADD   A64_V  0 Q:1 0 01110  size:2 1 rm:5 00000 1 rn:5 rd:5
+SQADDv  A64_V  0 Q:1 0 01110  size:2 1 rm:5 00001 1 rn:5 rd:5
+SRHADD  A64_V  0 Q:1 0 01110  size:2 1 rm:5 00010 1 rn:5 rd:5
+SHSUB   A64_V  0 Q:1 0 01110  size:2 1 rm:5 00100 1 rn:5 rd:5
+SQSUBv   A64_V  0 Q:1 0 01110  size:2 1 rm:5 00101 1 rn:5 rd:5
+CMGTv    A64_V  0 Q:1 0 01110  size:2 1 rm:5 00110 1 rn:5 rd:5
+CMGEv    A64_V  0 Q:1 0 01110  size:2 1 rm:5 00111 1 rn:5 rd:5
+SSHLv    A64_V  0 Q:1 0 01110  size:2 1 rm:5 01000 1 rn:5 rd:5
+SQSHLv   A64_V  0 Q:1 0 01110  size:2 1 rm:5 01001 1 rn:5 rd:5
+SRSHLv   A64_V  0 Q:1 0 01110  size:2 1 rm:5 01010 1 rn:5 rd:5
+SQRSHLv  A64_V  0 Q:1 0 01110  size:2 1 rm:5 01011 1 rn:5 rd:5
+SMAX    A64_V  0 Q:1 0 01110  size:2 1 rm:5 01100 1 rn:5 rd:5
+SMIN    A64_V  0 Q:1 0 01110  size:2 1 rm:5 01101 1 rn:5 rd:5
+SABD    A64_V  0 Q:1 0 01110  size:2 1 rm:5 01110 1 rn:5 rd:5
+SABA    A64_V  0 Q:1 0 01110  size:2 1 rm:5 01111 1 rn:5 rd:5
+ADDv     A64_V  0 Q:1 0 01110  size:2 1 rm:5 10000 1 rn:5 rd:5
+CMTSTv   A64_V  0 Q:1 0 01110  size:2 1 rm:5 10001 1 rn:5 rd:5
+MLA     A64_V  0 Q:1 0 01110  size:2 1 rm:5 10010 1 rn:5 rd:5
+MUL     A64_V  0 Q:1 0 01110  size:2 1 rm:5 10011 1 rn:5 rd:5
+SMAXP   A64_V  0 Q:1 0 01110  size:2 1 rm:5 10100 1 rn:5 rd:5
+SMINP   A64_V  0 Q:1 0 01110  size:2 1 rm:5 10101 1 rn:5 rd:5
+SQDMULHv A64_V  0 Q:1 0 01110  size:2 1 rm:5 10110 1 rn:5 rd:5
+ADDPv    A64_V  0 Q:1 0 01110  size:2 1 rm:5 10111 1 rn:5 rd:5
+FMAXNMv  A64_V  0 Q:1 0 01110  size:2 1 rm:5 11000 1 rn:5 rd:5 # size:0x
+FMLAv    A64_V  0 Q:1 0 01110  size:2 1 rm:5 11001 1 rn:5 rd:5 # size:0x
+FADDv    A64_V  0 Q:1 0 01110  size:2 1 rm:5 11010 1 rn:5 rd:5 # size:0x
+FMULXv   A64_V  0 Q:1 0 01110  size:2 1 rm:5 11011 1 rn:5 rd:5 # size:0x
+FCMEQv   A64_V  0 Q:1 0 01110  size:2 1 rm:5 11100 1 rn:5 rd:5 # size:0x
+FMAXv    A64_V  0 Q:1 0 01110  size:2 1 rm:5 11110 1 rn:5 rd:5 # size:0x
+FRECPSv  A64_V  0 Q:1 0 01110  size:2 1 rm:5 11111 1 rn:5 rd:5 # size:0x
+ANDv     A64_V  0 Q:1 0 01110  size:2 1 rm:5 00011 1 rn:5 rd:5 # size:00
+BICv     A64_V  0 Q:1 0 01110  size:2 1 rm:5 00011 1 rn:5 rd:5 # size:01
+FMINNMv  A64_V  0 Q:1 0 01110  size:2 1 rm:5 11000 1 rn:5 rd:5 # size:1x
+FMLSv    A64_V  0 Q:1 0 01110  size:2 1 rm:5 11001 1 rn:5 rd:5 # size:1x
+FSUBv    A64_V  0 Q:1 0 01110  size:2 1 rm:5 11010 1 rn:5 rd:5 # size:1x
+FMINv    A64_V  0 Q:1 0 01110  size:2 1 rm:5 11110 1 rn:5 rd:5 # size:1x
+FRSQRTSv A64_V  0 Q:1 0 01110  size:2 1 rm:5 11111 1 rn:5 rd:5 # size:1x
+ORRv     A64_V  0 Q:1 0 01110  size:2 1 rm:5 00011 1 rn:5 rd:5 # size:10
+ORNv     A64_V  0 Q:1 0 01110  size:2 1 rm:5 00011 1 rn:5 rd:5 # size:11
+UHADD   A64_V  0 Q:1 1 01110  size:2 1 rm:5 00000 1 rn:5 rd:5
+UQADDv   A64_V  0 Q:1 1 01110  size:2 1 rm:5 00001 1 rn:5 rd:5
+URHADD  A64_V  0 Q:1 1 01110  size:2 1 rm:5 00010 1 rn:5 rd:5
+UHSUB   A64_V  0 Q:1 1 01110  size:2 1 rm:5 00100 1 rn:5 rd:5
+UQSUBv   A64_V  0 Q:1 1 01110  size:2 1 rm:5 00101 1 rn:5 rd:5
+CMHIv    A64_V  0 Q:1 1 01110  size:2 1 rm:5 00110 1 rn:5 rd:5
+CMHSv    A64_V  0 Q:1 1 01110  size:2 1 rm:5 00111 1 rn:5 rd:5
+USHLv    A64_V  0 Q:1 1 01110  size:2 1 rm:5 01000 1 rn:5 rd:5
+UQSHLv   A64_V  0 Q:1 1 01110  size:2 1 rm:5 01001 1 rn:5 rd:5
+URSHLv   A64_V  0 Q:1 1 01110  size:2 1 rm:5 01010 1 rn:5 rd:5
+UQRSHLv  A64_V  0 Q:1 1 01110  size:2 1 rm:5 01011 1 rn:5 rd:5
+UMAX    A64_V  0 Q:1 1 01110  size:2 1 rm:5 01100 1 rn:5 rd:5
+UMIN    A64_V  0 Q:1 1 01110  size:2 1 rm:5 01101 1 rn:5 rd:5
+UABD    A64_V  0 Q:1 1 01110  size:2 1 rm:5 01110 1 rn:5 rd:5
+UABA    A64_V  0 Q:1 1 01110  size:2 1 rm:5 01111 1 rn:5 rd:5
+SUBv     A64_V  0 Q:1 1 01110  size:2 1 rm:5 10000 1 rn:5 rd:5
+CMEQv    A64_V  0 Q:1 1 01110  size:2 1 rm:5 10001 1 rn:5 rd:5
+MLS     A64_V  0 Q:1 1 01110  size:2 1 rm:5 10010 1 rn:5 rd:5
+PMUL    A64_V  0 Q:1 1 01110  size:2 1 rm:5 10011 1 rn:5 rd:5
+UMAXP   A64_V  0 Q:1 1 01110  size:2 1 rm:5 10100 1 rn:5 rd:5
+UMINP   A64_V  0 Q:1 1 01110  size:2 1 rm:5 10101 1 rn:5 rd:5
+SQRDMULHv A64_V   0 Q:1 1 01110  size:2 1 rm:5 10110 1 rn:5 rd:5
+FMAXNMPv A64_V 0 Q:1 1 01110  size:2 1 rm:5 11000 1 rn:5 rd:5 # size: 0x
+FADDPv   A64_V  0 Q:1 1 01110  size:2 1 rm:5 11010 1 rn:5 rd:5 # size: 0x
+FMULv    A64_V  0 Q:1 1 01110  size:2 1 rm:5 11011 1 rn:5 rd:5 # size: 0x
+FCMGEv   A64_V  0 Q:1 1 01110  size:2 1 rm:5 11100 1 rn:5 rd:5 # size: 0x
+FACGEv   A64_V  0 Q:1 1 01110  size:2 1 rm:5 11101 1 rn:5 rd:5 # size: 0x
+FMAXPv   A64_V  0 Q:1 1 01110  size:2 1 rm:5 11110 1 rn:5 rd:5 # size: 0x
+FDIVv    A64_V  0 Q:1 1 01110  size:2 1 rm:5 11111 1 rn:5 rd:5 # size: 0x
+EORv     A64_V  0 Q:1 1 01110  size:2 1 rm:5 00011 1 rn:5 rd:5 # size: 00
+BSL     A64_V  0 Q:1 1 01110  size:2 1 rm:5 00011 1 rn:5 rd:5 # size: 01
+FMINNMPv A64_V  0 Q:1 1 01110  size:2 1 rm:5 11000 1 rn:5 rd:5 # size: 1x
+FABDv    A64_V  0 Q:1 1 01110  size:2 1 rm:5 11010 1 rn:5 rd:5 # size: 1x
+FCMGTv   A64_V  0 Q:1 1 01110  size:2 1 rm:5 11100 1 rn:5 rd:5 # size: 1x
+FACGTv   A64_V  0 Q:1 1 01110  size:2 1 rm:5 11101 1 rn:5 rd:5 # size: 1x
+FMINPv   A64_V  0 Q:1 1 01110  size:2 1 rm:5 11110 1 rn:5 rd:5 # size: 1x
+BIT     A64_V  0 Q:1 1 01110  size:2 1 rm:5 00011 1 rn:5 rd:5 # size: 10
+BIF     A64_V  0 Q:1 1 01110  size:2 1 rm:5 00011 1 rn:5 rd:5 # size: 11
+
+# Advanced SIMD two-register miscellaneous
+# 31 30 29 28 27 26 25 24 23    22 21 20 19 18 17 16      12 11 10 9    5 4    0
+#  0  Q  U  0  1  1  1  0 [ size ]  1  0  0  0  0 [ opcode ] 1   0 [ Rn ] [ Rd ]
+#
+REV64v  A64_V   0 Q:1 0 01110 size:2 10000 00000 10 rn:5 rd:5
+REV16v  A64_V   0 Q:1 0 01110 size:2 10000 00001 10 rn:5 rd:5
+SADDLP  A64_V   0 Q:1 0 01110 size:2 10000 00010 10 rn:5 rd:5
+SUQADD  A64_V   0 Q:1 0 01110 size:2 10000 00011 10 rn:5 rd:5
+CLSv    A64_V   0 Q:1 0 01110 size:2 10000 00100 10 rn:5 rd:5
+CNT     A64_V   0 Q:1 0 01110 size:2 10000 00101 10 rn:5 rd:5
+SADALP  A64_V   0 Q:1 0 01110 size:2 10000 00110 10 rn:5 rd:5
+SQABS   A64_V   0 Q:1 0 01110 size:2 10000 00111 10 rn:5 rd:5
+CMGTz   A64_V   0 Q:1 0 01110 size:2 10000 01000 10 rn:5 rd:5
+CMEQz   A64_V   0 Q:1 0 01110 size:2 10000 01001 10 rn:5 rd:5
+CMLTz   A64_V   0 Q:1 0 01110 size:2 10000 01010 10 rn:5 rd:5
+ABSv    A64_V   0 Q:1 0 01110 size:2 10000 01011 10 rn:5 rd:5
+XTNv    A64_V   0 Q:1 0 01110 size:2 10000 10010 10 rn:5 rd:5
+SQXTNv  A64_V   0 Q:1 0 01110 size:2 10000 10100 10 rn:5 rd:5
+FCVTN   A64_V   0 Q:1 0 01110 size:2 10000 10110 10 rn:5 rd:5 \
+!constraints { $size < 2; }
+FCVTL   A64_V   0 Q:1 0 01110 size:2 10000 10111 10 rn:5 rd:5 \
+!constraints { $size < 2; }
+FRINTNv A64_V   0 Q:1 0 01110 size:2 10000 11000 10 rn:5 rd:5 \
+!constraints { $size < 2; }
+FRINTMv A64_V   0 Q:1 0 01110 size:2 10000 11001 10 rn:5 rd:5 \
+!constraints { $size < 2; }
+FCVTNSv A64_V   0 Q:1 0 01110 size:2 10000 11010 10 rn:5 rd:5 \
+!constraints { $size < 2; }
+FCVTMSv A64_V   0 Q:1 0 01110 size:2 10000 11011 10 rn:5 rd:5 \
+!constraints { $size < 2; }
+FCVTASv A64_V   0 Q:1 0 01110 size:2 10000 11100 10 rn:5 rd:5 \
+!constraints { $size < 2; }
+SCVTFv  A64_V   0 Q:1 0 01110 size:2 10000 11101 10 rn:5 rd:5 \
+!constraints { $size < 2; }
+SCVTFv_RES1 A64_V   0 0 0 01110 01 10000 11101 10 rn:5 rd:5
+FCMGTz  A64_V   0 Q:1 0 01110 size:2 10000 01100 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+FCMEQz  A64_V   0 Q:1 0 01110 size:2 10000 01101 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+FCMLTz  A64_V   0 Q:1 0 01110 size:2 10000 01110 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+FABSv   A64_V   0 Q:1 0 01110 size:2 10000 01111 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+FRINTPv A64_V   0 Q:1 0 01110 size:2 10000 11000 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+FRINTZv A64_V   0 Q:1 0 01110 size:2 10000 11001 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+FCVTPSv A64_V   0 Q:1 0 01110 size:2 10000 11010 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+FCVTPSvi A64_V   0 Q:1 0 01110 size:2 10000 11011 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+URECPE  A64_V   0 Q:1 0 01110 size:2 10000 11100 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+FRECPE  A64_V   0 Q:1 0 01110 size:2 10000 11100 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+REV32v  A64_V   1 Q:1 0 01110 size:2 10000 00000 10 rn:5 rd:5
+UADDLP  A64_V   1 Q:1 0 01110 size:2 10000 00010 10 rn:5 rd:5
+USQADD  A64_V   1 Q:1 0 01110 size:2 10000 00011 10 rn:5 rd:5
+CLZv    A64_V   1 Q:1 0 01110 size:2 10000 00100 10 rn:5 rd:5
+UADALP  A64_V   1 Q:1 0 01110 size:2 10000 00110 10 rn:5 rd:5
+SQNEG   A64_V   1 Q:1 0 01110 size:2 10000 00111 10 rn:5 rd:5
+CMGEz   A64_V   1 Q:1 0 01110 size:2 10000 01000 10 rn:5 rd:5
+CMLEz   A64_V   1 Q:1 0 01110 size:2 10000 01001 10 rn:5 rd:5
+NEGv    A64_V   0 Q:1 1 01110 size:2 10000 01011 10 rn:5 rd:5
+SQXTUN  A64_V   1 Q:1 0 01110 size:2 10000 10010 10 rn:5 rd:5
+SHLL    A64_V   1 Q:1 0 01110 size:2 10000 10011 10 rn:5 rd:5
+UQXTNv  A64_V   0 Q:1 1 01110 size:2 10000 10100 10 rn:5 rd:5
+FCVTXN  A64_V   0 Q:1 1 01110 size:2 10000 10110 10 rn:5 rd:5 \
+!constraints { $size < 2; }
+FRINTAv A64_V   0 Q:1 1 01110 size:2 10000 11000 10 rn:5 rd:5 \
+!constraints { $size < 2; }
+FRINTXv A64_V   0 Q:1 1 01110 size:2 10000 11001 10 rn:5 rd:5 \
+!constraints { $size < 2; }
+FCVTNUv A64_V   0 Q:1 1 01110 size:2 10000 11010 10 rn:5 rd:5 \
+!constraints { $size < 2; }
+FCVTMUv A64_V   0 Q:1 1 01110 size:2 10000 11011 10 rn:5 rd:5 \
+!constraints { $size < 2; }
+FCVTAUv A64_V   0 Q:1 1 01110 size:2 10000 11100 10 rn:5 rd:5 \
+!constraints { $size < 2; }
+UCVTFv  A64_V   0 Q:1 1 01110 size:2 10000 11101 10 rn:5 rd:5 \
+!constraints { $size < 2; }
+UCVTFv_RES1 A64_V 0 0 1 01110 01 10000 11101 10 rn:5 rd:5
+NOT     A64_V   0 Q:1 1 01110 00 10000 00101 10 rn:5 rd:5
+RBITv   A64_V   0 Q:1 1 01110 01 10000 00101 10 rn:5 rd:5
+FCMGEz  A64_V   0 Q:1 1 01110 size:2 10000 00101 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+FCMLEz  A64_V   0 Q:1 1 01110 size:2 10000 00101 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+FNEGv   A64_V   0 Q:1 1 01110 size:2 10000 01111 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+FRINTIv A64_V   0 Q:1 1 01110 size:2 10000 11001 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+FCVTPUv A64_V   0 Q:1 1 01110 size:2 10000 11010 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+FCVTZUvi A64_V  0 Q:1 1 01110 size:2 10000 11011 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+URSQRTE  A64_V  0 Q:1 1 01110 size:2 10000 11100 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+FRSQRTE  A64_V  0 Q:1 1 01110 size:2 10000 11101 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+FSQRTv   A64_V  0 Q:1 1 01110 size:2 10000 11111 10 rn:5 rd:5 \
+!constraints { $size > 1; }
+
+# Advanced SIMD vector x indexed element
+# Complete coverage. Note we tend to leave in U bit etc which
+# may actually be unallocated encodings.
+
+# Long ops:
+SMLAL_IDX A64_V 0 Q U 01111 sz:2 l m rm:4 0010 h 0 rn:5 rd:5
+SQDMLAL_IDX A64_V 0 Q U 01111 sz:2 l m rm:4 0011 h 0 rn:5 rd:5
+SMLSL_IDX A64_V 0 Q U 01111 sz:2 l m rm:4 0110 h 0 rn:5 rd:5
+SQDMLSL_IDX A64_V 0 Q U 01111 sz:2 l m rm:4 0111 h 0 rn:5 rd:5
+SMULL_IDX A64_V 0 Q U 01111 sz:2 l m rm:4 1010 h 0 rn:5 rd:5
+SQDMULL_IDX A64_V 0 Q U 01111 sz:2 l m rm:4 1011 h 0 rn:5 rd:5
+
+# Not long:
+MUL_IDX A64_V 0 Q U 01111 sz:2 l m rm:4 1000 h 0 rn:5 rd:5
+MLA_IDX A64_V 0 Q U 01111 sz:2 l m rm:4 0000 h 0 rn:5 rd:5
+MLS_IDX A64_V 0 Q U 01111 sz:2 l m rm:4 0100 h 0 rn:5 rd:5
+SQDMULH_IDX A64_V 0 Q U 01111 sz:2 l m rm:4 1100 h 0 rn:5 rd:5
+SQRDMULH_IDX A64_V 0 Q U 01111 sz:2 l m rm:4 1101 h 0 rn:5 rd:5
+FMLA_IDX A64_V 0 Q U 01111 sz:2 l m rm:4 0001 h 0 rn:5 rd:5
+FMLS_IDX A64_V 0 Q U 01111 sz:2 l m rm:4 0101 h 0 rn:5 rd:5
+FMUL_FMULX_IDX A64_V 0 Q U 01111 sz:2 l m rm:4 1001 h 0 rn:5 rd:5
+
+# Cryptographic AES
+@Cryptographic,CryptographicAES
+AESE   A64_V 0100 1110 sz:2 10100 00100 10 rn:5 rd:5
+AESD   A64_V 0100 1110 sz:2 10100 00101 10 rn:5 rd:5
+AESMC  A64_V 0100 1110 sz:2 10100 00110 10 rn:5 rd:5
+AESIMC A64_V 0100 1110 sz:2 10100 00111 10 rn:5 rd:5
+
+# Cryptographic three-register SHA
+@Cryptographic,CryptographicSHA
+SHA1C     A64_V 0101 1110 sz:2 0 rm:5 0 000 00 rn:5 rd:5
+SHA1P     A64_V 0101 1110 sz:2 0 rm:5 0 001 00 rn:5 rd:5
+SHA1M     A64_V 0101 1110 sz:2 0 rm:5 0 010 00 rn:5 rd:5
+SHA1SU0   A64_V 0101 1110 sz:2 0 rm:5 0 011 00 rn:5 rd:5
+SHA256H   A64_V 0101 1110 sz:2 0 rm:5 0 100 00 rn:5 rd:5
+SHA256H2  A64_V 0101 1110 sz:2 0 rm:5 0 101 00 rn:5 rd:5
+SHA256SU1 A64_V 0101 1110 sz:2 0 rm:5 0 110 00 rn:5 rd:5
+
+# Cryptographic two-register SHA
+SHA1H     A64_V 0101 1110 sz:2 10100 00000 10 rn:5 rd:5
+SHA1SU1   A64_V 0101 1110 sz:2 10100 00001 10 rn:5 rd:5
+SHA256SU0 A64_V 0101 1110 sz:2 10100 00010 10 rn:5 rd:5
+
+# Floating-point compare
+# 31 30 29 28 27 26 25 24 23 22 21 20  16 15 14 13 12 11 10 9    5 4       0
+#  M  0  S  1  1  1  1  0  type  1   Rm    op    1  0  0  0   Rn    opcode2
+@DataProcessingScalarFP
+
+FCMPS A64_V 000 11110 00 1 rm:5 00 1000 rn:5 00 000
+FCMPZS A64_V 000 11110 00 1 00000 00 1000 rn:5 01 000
+FCMPES A64_V 000 11110 00 1 rm:5 00 1000 rn:5 10 000
+FCMPEZS A64_V 000 11110 00 1 00000 00 1000 rn:5 11 000
+
+FCMPD A64_V 000 11110 01 1 rm:5 00 1000 rn:5 00 000
+FCMPZD A64_V 000 11110 01 1 00000 00 1000 rn:5 01 000
+FCMPED A64_V 000 11110 01 1 rm:5 00 1000 rn:5 10 000
+FCMPEZD A64_V 000 11110 01 1 00000 00 1000 rn:5 11 000
+
+# Unallocated Encodings and ReservedValues
+FCMP_RES1 A64_V mos:3 11110 0 type:1 1 rm:5 00 1000 rn:5 opc:2 000 \
+!constraints { $mos != 0 && !(($mos & 2) > 0); }
+FCMP_RES2 A64_V 000 11110 1 type:1 1 rm:5 00 1000 rn:5 opc:2 000
+FCMP_RES3 A64_V 000 11110 0 type:1 1 rm:5 op:2 1000 rn:5 opc:2 000 \
+!constraints { $op != 0; }
+FCMP_RES4 A64_V 000 11110 0 type:1 1 rm:5 00 1000 rn:5 opc:2 op2r:3 \
+!constraints { $op2r != 0; }
+
+# Floating-point conditional compare
+# 31 30 29 28 27 26 25 24 23 22 21 20  16 15   12 11 10 9  5  4  3    0
+#  M  0  S  1  1  1  1  0  type  1   Rm    cond    0  1  Rn  op   nzcv
+
+FCCMPS A64_V 000 11110 00 1 rm:5 cond:4 01 rn:5 0 nzcv:4
+FCCMPES A64_V 000 11110 00 1 rm:5 cond:4 01 rn:5 1 nzcv:4
+
+FCCMPD A64_V 000 11110 01 1 rm:5 cond:4 01 rn:5 0 nzcv:4
+FCCMPED A64_V 000 11110 01 1 rm:5 cond:4 01 rn:5 1 nzcv:4
+
+FCCMP_RES1 A64_V mos:3 11110 0 type:1 1 rm:5 cond:4 01 rn:5 op:1 nzcv:4 \
+!constraints { $mos != 0 && !(($mos & 2) > 0); }
+FCCMP_RES2 A64_V 000 11110 1 type:1 1 rm:5 cond:4 01 rn:5 op:1 nzcv:4
+
+# Floating-point conditional select
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15    12 11 10 9    5 4    0
+#  M  0  S  1  1  1  1  0  type  1    Rm      cond    1  1   Rn     Rd
+
+FCSELS A64_V 000 11110 00 1 rm:5 cond:4 11 rn:5 rd:5
+FCSELD A64_V 000 11110 01 1 rm:5 cond:4 11 rn:5 rd:5
+
+FCSEL_RES1 A64_V mos:3 11110 0 type:1 1 rm:5 cond:4 11 rn:5 rd:5 \
+!constraints { $mos != 0 && !(($mos & 2) > 0); }
+FCSEL_RES2 A64_V 000 11110 1 type:1 1 rm:5 cond:4 11 rn:5 rd:5
+
+# Floating-point data-processing (1 source)
+# 31 30 29 28 27 26 25 24 |23 22| 21 20        15 14 13 12 11 10 9  5 4  0
+#  M  0  S  1  1  1  1  0 |type |  1    opcode     1  0  0  0  0  Rn   Rd
+#
+# v8.2 introduced half-precision variants
+@FPDataProc1Src
+# FMOV (register) opc = 0
+FMOV       A64_V   00011110 0 type:1 1 0000 00 10000 rn:5 rd:5
+FMOV_RES   A64_V80 00011110 1 type:1 1 0000 00 10000 rn:5 rd:5
+FMOV       A64_V82 00011110   type:2 1 0000 00 10000 rn:5 rd:5
+# FABS (scalar) opc = 1
+FABS       A64_V   00011110 0 type:1 1 0000 01 10000 rn:5 rd:5
+FABS_RES   A64_V80 00011110 1 type:1 1 0000 01 10000 rn:5 rd:5
+FABS       A64_V82 00011110   type:2 1 0000 01 10000 rn:5 rd:5
+# FNEG (scalar) opc = 2
+FNEG       A64_V   00011110 0 type:1 1 0000 10 10000 rn:5 rd:5
+FNEG_RES   A64_V80 00011110 1 type:1 1 0000 10 10000 rn:5 rd:5
+FNEG       A64_V82 00011110   type:2 1 0000 10 10000 rn:5 rd:5
+# FSQRT (scalar) opc = 3
+FSQRT      A64_V   00011110 0 type:1 1 0000 11 10000 rn:5 rd:5
+FSQRT_RES  A64_V80 00011110 1 type:1 1 0000 11 10000 rn:5 rd:5
+FSQRT      A64_V82 00011110   type:2 1 0000 11 10000 rn:5 rd:5
+# FCVT (all forms) - NB: conversion with src = dst is not allowed
+FCVT       A64_V   00011110   type:2 1 0001 opc:2 10000 rn:5 rd:5 \
+!constraints { $type != 2 && $opc != 2 && $type != $opc; }
+FCVT       A64_V82 00011110   type:2 1 0001 opc:2 10000 rn:5 rd:5 \
+!constraints { $type != $opc; }
+# UnallocatedEncoding: type == 2
+FCVT_RES1  A64_V80 00011110       10 1 0001 opc:2 10000 rn:5 rd:5
+# UnallocatedEncoding: opc == 2
+FCVT_RES2  A64_V80 00011110   type:2 1 0001 10    10000 rn:5 rd:5
+# UnallocatedEncoding: type == opc
+FCVT_RES3  A64_V   00011110   type:2 1 0001 opc:2 10000 rn:5 rd:5 \
+!constraints { $type == $opc; }
+
+# FRINT (scalar), all rounding modes
+FRINT      A64_V   00011110   type:2 1 001 mode:3 10000 rn:5 rd:5 \
+!constraints { $type < 2 && $mode != 5; }
+FRINT      A64_V82 00011110   type:2 1 001 mode:3 10000 rn:5 rd:5 \
+!constraints { $mode != 5; }
+# UnallocatedEncoding: type >= 2
+FRINT_RES1 A64_V80 00011110 1 type:1 1 001 mode:3 10000 rn:5 rd:5
+# UnallocatedEncoding: rounding mode == 5
+FRINT_RES2 A64_V   00011110   type:2 1 001    101 10000 rn:5 rd:5
+@
+
+# Floating-point data-processing (2 source)
+# 31 30 29 28 27 26 25 24 23 22 21 20    16 15      12 11 10 9  5 4  0
+#  M  0  S  1  1  1  1  0  type  1    Rm      opcode    1  0  Rn   Rd
+
+# FMUL (scalar)
+FMUL A64_V 00011110 type:2 1 rm:5 0000 10 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FMUL_RES A64_V 00011110 1 type:1 1 rm:5 0000 10 rn:5 rd:5
+
+# FDIV (scalar)
+FDIV A64_V 00011110 type:2 1 rm:5 0001 10 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FDIV_RES A64_V 00011110 1 type:1 1 rm:5 0001 10 rn:5 rd:5
+
+# FADD (scalar)
+FADD A64_V 00011110 type:2 1 rm:5 0010 10 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FADD_RES A64_V 00011110 1 type:1 1 rm:5 0010 10 rn:5 rd:5
+
+# FSUB (scalar)
+FSUB A64_V 00011110 type:2 1 rm:5 0011 10 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FSUB_RES A64_V 00011110 1 type:1 1 rm:5 0011 10 rn:5 rd:5
+
+# FMAX (scalar)
+FMAX A64_V 00011110 type:2 1 rm:5 0100 10 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FMAX_RES A64_V 00011110 1 type:1 1 rm:5 0100 10 rn:5 rd:5
+
+# FMIN (scalar)
+FMIN A64_V 00011110 type:2 1 rm:5 0101 10 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FMIN_RES A64_V 00011110 1 type:1 1 rm:5 0101 10 rn:5 rd:5
+
+# FMAXNM (scalar)
+FMAXNM A64_V 00011110 type:2 1 rm:5 0110 10 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FMAXNM_RES A64_V 00011110 1 type:1 1 rm:5 0110 10 rn:5 rd:5
+
+# FMINNM (scalar)
+FMINNM A64_V 00011110 type:2 1 rm:5 0111 10 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FMINNM_RES A64_V 00011110 1 type:1 1 rm:5 0111 10 rn:5 rd:5
+
+# FNMUL (scalar)
+FNMUL A64_V 00011110 type:2 1 rm:5 1000 10 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FNMUL_RES A64_V 00011110 1 type:1 1 rm:5 1000 10 rn:5 rd:5
+
+# Floating-point data-processing (3 source)
+# 31 30 29 28 27 26 25 24 23 22 21 20  16 15 14  10 9  5 4  0
+#  M  0  S  1  1  1  1  1 type  o1   Rm   o0   Ra    Rn   Rd
+
+FMADD A64_V 00011111 type:2 0 rm:5 0 ra:5 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FMADD_RES A64_V 00011111 1 type:1 0 rm:5 0 ra:5 rn:5 rd:5
+
+FMSUB A64_V 00011111 type:2 0 rm:5 1 ra:5 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FMSUB_RES A64_V 00011111 1 type:1 0 rm:5 1 ra:5 rn:5 rd:5
+
+FNMADD A64_V 00011111 type:2 1 rm:5 0 ra:5 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FNMADD_RES A64_V 00011111 1 type:1 1 rm:5 0 ra:5 rn:5 rd:5
+
+FNMSUB A64_V 00011111 type:2 1 rm:5 1 ra:5 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FNMSUB_RES A64_V 00011111 1 type:1 1 rm:5 1 ra:5 rn:5 rd:5
+
+# Floating-point immediate
+# 31 30 29 28 27 26 25 24 23 22 21 20    13 12 11 10 9    5 4    0
+#  M  0  S  1  1  1  1  0 type   1   imm8    1  0  0  imm5    Rd
+
+FMOVi A64_V 00011110 type:2 1 imm:8 100 00000 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FMOVi_RES A64_V 00011110 1 type:1 1 imm:8 100 00000 rd:5
+
+# Conversion between floating-point and fixed-point
+# 31 30 29 28 27 26 25 24 23 22 21 20 19  18  16  15     10 9  5 4  0
+# sf  0  S  1  1  1  1  0 type   0 rmode  opcode    scale    Rn   Rd
+
+# SCVTF (scalar, fixed point)
+SCVTFsf A64_V sf:1 0011110 type:2 0 00 010 scale:6 rn:5 rd:5 \
+!constraints { $type < 2 && !($sf == 0 && $scale < 0x20); }
+# UnallocatedEncoding: type >= 2
+SCVTFsf_RES1 A64_V sf:1 0011110 1 type:1 0 00 010 scale:6 rn:5 rd:5
+# UnallocatedEncoding: sf == 0 && $scale < 0x20
+SCVTFsf_RES2 A64_V 0 0011110 type:2 0 00 010 0 scale:5 rn:5 rd:5
+
+# UCVTF (scalar, fixed point)
+UCVTFsf A64_V sf:1 0011110 type:2 0 00 011 scale:6 rn:5 rd:5 \
+!constraints { $type < 2 && !($sf == 0 && $scale < 0x20); }
+# UnallocatedEncoding: type >= 2
+UCVTFsf_RES1 A64_V sf:1 0011110 1 type:1 0 00 011 scale:6 rn:5 rd:5
+# UnallocatedEncoding: sf == 0 && $scale < 0x20
+UCVTFsf_RES2 A64_V 0 0011110 type:2 0 00 011 0 scale:5 rn:5 rd:5
+
+# FCVTZS (scalar, fixed point)
+FCVTZSsf A64_V sf:1 0011110 type:2 0 11 000 scale:6 rn:5 rd:5 \
+!constraints { $type < 2 && !($sf == 0 && $scale < 0x20); }
+# UnallocatedEncoding: type >= 2
+FCVTZSsf_RES1 A64_V sf:1 0011110 1 type:1 0 11 000 scale:6 rn:5 rd:5
+# UnallocatedEncoding: sf == 0 && $scale < 0x20
+FCVTZSsf_RES2 A64_V 0 0011110 1 type:1 0 11 000 0 scale:5 rn:5 rd:5
+
+# FCVTZU (scalar, fixed point)
+FCVTZUsf A64_V sf:1 0011110 type:2 0 11 001 scale:6 rn:5 rd:5 \
+!constraints { $type < 2 && !($sf == 0 && $scale < 0x20); }
+# UnallocatedEncoding: type >= 2
+FCVTZUsf_RES1 A64_V sf:1 0011110 1 type:1 0 11 001 scale:6 rn:5 rd:5
+# UnallocatedEncoding: sf == 0 && $scale < 0x20
+FCVTZUsf_RES2 A64_V 0 0011110 1 type:1 0 11 001 0 scale:5 rn:5 rd:5
+
+# Conversion between floating-point and integer
+# 31 30 29 28 27 26 25 24 23 22 21 20 19 18    16 15 14 13 12 11 10  9  5  4  0
+# sf  0  S  1  1  1  1  0  type  1 rmode  opcode   0  0  0  0  0  0   Rn    Rd
+
+# FCVTNS (scalar)
+FCVTNS A64_V sf:1 0011110 type:2 1 00 000 000000 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FCVTNS_RES A64_V sf:1 0011110 1 type:1 1 00 000 000000 rn:5 rd:5
+
+# FCVTNU (scalar)
+FCVTNU A64_V sf:1 0011110 type:2 1 00 001 000000 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FCVTNU_RES A64_V sf:1 0011110 1 type:1 1 00 001 000000 rn:5 rd:5
+
+# SCVTF (scalar, integer)
+SCVTFsi A64_V sf:1 0011110 type:2 1 00 010 000000 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+SCVTFsi_RES A64_V sf:1 0011110 1 type:1 1 00 010 000000 rn:5 rd:5
+
+# UCVTF (scalar, integer)
+UCVTFsi A64_V sf:1 0011110 type:2 1 00 011 000000 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+UCVTFsi_RES A64_V sf:1 0011110 1 type:1 1 00 011 000000 rn:5 rd:5
+
+# FCVTAS (scalar)
+FCVTAS A64_V sf:1 0011110 type:2 1 00 100 000000 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FCVTAS_RES A64_V sf:1 0011110 1 type:1 1 00 100 000000 rn:5 rd:5
+
+# FCVTAU (scalar)
+FCVTAU A64_V sf:1 0011110 type:2 1 00 101 000000 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FCVTAU_RES A64_V sf:1 0011110 1 type:1 1 00 101 000000 rn:5 rd:5
+
+# FMOV to/from general purpose registers
+FMOVgp A64_V sf:1 0011110 type:2 1 rmode:2 11 op:1 000000 rn:5 rd:5 \
+!constraints { ($rmode == 0 && $sf == $type) || ($rmode == 1 && $sf == 1 && $type == 2); }
+
+# UnallocatedEncoding: negate constraint
+FMOVgp_RES A64_V sf:1 0011110 type:2 1 rmode:2 11 op:1 000000 rn:5 rd:5 \
+!constraints { !(($rmode == 0 && $sf == $type) || ($rmode == 1 && $sf == 1 && $type == 2)); }
+
+# FCVTPS (scalar)
+FCVTPS A64_V sf:1 0011110 type:2 1 01 000 000000 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FCVTPS_RES A64_V sf:1 0011110 1 type:1 1 01 000 000000 rn:5 rd:5
+
+# FCVTPU (scalar)
+FCVTPU A64_V sf:1 0011110 type:2 1 01 001 000000 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FCVTPU_RES A64_V sf:1 0011110 1 type:1 1 01 001 000000 rn:5 rd:5
+
+# FCVTMS (scalar)
+FCVTMS A64_V sf:1 0011110 type:2 1 10 000 000000 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FCVTMS_RES A64_V sf:1 0011110 1 type:1 1 10 000 000000 rn:5 rd:5
+
+# FCVTMU (scalar)
+FCVTMU A64_V sf:1 0011110 type:2 1 10 001 000000 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FCVTMU_RES A64_V sf:1 0011110 1 type:1 1 10 001 000000 rn:5 rd:5
+
+# FCVTZS (scalar, integer)
+FCVTZSsi A64_V sf:1 0011110 type:2 1 11 000 000000 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FCVTZSsi_RES A64_V sf:1 0011110 1 type:1 1 11 000 000000 rn:5 rd:5
+
+# FCVTZU (scalar, integer)
+FCVTZUsi A64_V sf:1 0011110 type:2 1 11 001 000000 rn:5 rd:5 \
+!constraints { $type < 2; }
+# UnallocatedEncoding: type >= 2
+FCVTZUsi_RES A64_V sf:1 0011110 1 type:1 1 11 001 000000 rn:5 rd:5
+
+#
+# AdvSIMD v8.1 extensions
+#
+
+@v8_1_simd
+
+# SQRDMLAH (vector, scalar)
+SQRDMLAHvs  A64_V81  01111110 size:2 0 rm:5 100001 rn:5 rd:5
+# SQRDMLAH (vector, vector)
+SQRDMLAHv   A64_V81  0 q:1 101110 size:2 0 rm:5 100001 rn:5 rd:5
+# SQRDMLAH (element, scalar)
+SQRDMLAHse  A64_V81  01111111 size:2 l:1 m:1 rm:4 1101 h:1 0 rn:5 rd:5
+# SQRDMLAH (element, vector)
+SQRDMLAHve  A64_V81  0 q:1 101111 size:2 l:1 m:1 rm:4 1101 h:1 0 rn:5 rd:5
+
+# SQRDMLSH (vector, scalar)
+SQRDMLSHvs  A64_V81  01111110 size:2 0 rm:5 100011 rn:5 rd:5
+# SQRDMLSH (vector, vector)
+SQRDMLSHv   A64_V81  0 q:1 101110 size:2 0 rm:5 100011 rn:5 rd:5
+# SQRDMLSH (element, scalar)
+SQRDMLSHse  A64_V81  01111111 size:2 l:1 m:1 rm:4 1111 h:1 0 rn:5 rd:5
+# SQRDMLSH (element, vector)
+SQRDMLSHve  A64_V81  0 q:1 101111 size:2 l:1 m:1 rm:4 1111 h:1 0 rn:5 rd:5
+
+#
+# AdvSIMD v8.3 extensions
+#
+@v8_3_compnum
+
+# FCADD (three registers of the same type)
+FCADD      A64_V83  0 q:1 101110 size:2 0 rm:5 111 rot:1 01 rn:5 rd:5
+
+# FCMLA (three registers of the same type)
+FCMLA      A64_V83  0 q:1 101110 size:2 0 rm:5 110 rot:2 1 rn:5 rd:5
+# FCMLA (vector x indexed element)
+FCMLA_idx  A64_V83  0 q:1 101111 size:2 l:1 m:1 rm:4 0 rot:2 1 h:1 0 rn:5 rd:5
+
+@
+# End of:
+# Data processing - SIMD and floating point
+# Data processing - Scalar Floating-Point and Advanced SIMD
+
+# These are optional ARMv8.2 cryptographic extensions
+@v8.2,Cryptographic,CryptographicSHA
+
+# Cryptographic three-register SHA 512
+# 31       21 20  16 15 14 13 12 11    10 9  5 4  0
+# 11001110011   Rm    1  O  0 0   opcode   Rn   Rd
+
+SHA512H    A64_V 1100 1110 011 rm:5 1 0 00 00 rn:5 rd:5
+SHA512H2   A64_V 1100 1110 011 rm:5 1 0 00 01 rn:5 rd:5
+SHA512SU1  A64_V 1100 1110 011 rm:5 1 0 00 10 rn:5 rd:5
+RAX1       A64_V 1100 1110 011 rm:5 1 0 00 11 rn:5 rd:5
+SM3PARTW1  A64_V 1100 1110 011 rm:5 1 1 00 00 rn:5 rd:5
+SM3PARTW2  A64_V 1100 1110 011 rm:5 1 1 00 01 rn:5 rd:5
+SM4EKEY    A64_V 1100 1110 011 rm:5 1 1 00 10 rn:5 rd:5
+SHA512_RES A64_V 1100 1110 011 rm:5 1 1 00 11 rn:5 rd:5
+
+# Cryptographic four-register
+# 31       23 22 21 20  16 15 14  10 9  5 4  0
+# 1100 1110 0  Op0    Rm    0   Ra    Rn   Rd
+
+EOR3      A64_V 1110 1110 0 00 rm:5 0 ra:5 rn:5 rd:5
+BCAX      A64_V 1110 1110 0 01 rm:5 0 ra:5 rn:5 rd:5
+SM3SS1    A64_V 1110 1110 0 10 rm:5 0 ra:5 rn:5 rd:5
+# unallocated: op0=11
+C4REG_RES A64_V 1100 1110 0 11 rm:5 0 ra:5 rn:5 rd:5
+
+# Cryptographic two-register SHA 512
+# 31                    12 11  10 9  5 4  0
+# 1100 1110 1100 0000 1000   op    Rn   Rd
+
+SHA512SU0 A64_V 1100 1110 1100 0000 1000 00 rn:5 rd:5
+SM4E      A64_V 1100 1110 1100 0000 1000 01 rn:5 rd:5
+# unallocated: opcode = 1x
+C2REG_RES A64_V 1100 1110 1100 0000 1000 1 x:1 rn:5 rd:5
+
+# Cryptographic three-register, imm2
+SM3TT1A A64_V 1100 1110 010 rm:5 10 imm:2 00 rn:5 rd:5
+SM3TT1B A64_V 1100 1110 010 rm:5 10 imm:2 01 rn:5 rd:5
+SM3TT2A A64_V 1100 1110 010 rm:5 10 imm:2 10 rn:5 rd:5
+SM3TT2B A64_V 1100 1110 010 rm:5 10 imm:2 11 rn:5 rd:5
+
+# XAR
+XAR A64_V 1100 1110 100 rm:5 imm:6 rn:5 rd:5
+
+@
+
+# v8.3-RCPC instructions
+@v8_3_rcpc
+
+# LDAPR, LDAPRH, LDAPRB
+# As usual, the $rn != $rt constraint is risu-imposed, not architectural
+LDAPR A64 sz:2 111000 101 11111 1100 00 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt } \
+!memory { align(1 << $sz); reg_plus_imm($rn, 0); }
+
+@
+
+# v8.4-RCPC instructions
+# As usual, the $rn != $rt constraint is risu-imposed, not architectural
+@v8_4_rcpc
+STLUR A64 sz:2 011001 00 0 imm:9 00 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt } \
+!memory { align(1 << $sz); reg_plus_imm($rn, $imm); }
+
+LDAPUR A64 sz:2 011001 01 0 imm:9 00 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt } \
+!memory { align(1 << $sz); reg_plus_imm($rn, $imm); }
+
+LDAPURS64 A64 sz:2 011001 10 0 imm:9 00 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $sz != 3 } \
+!memory { align(1 << $sz); reg_plus_imm($rn, $imm); }
+
+LDAPURS32 A64 sz:2 011001 11 0 imm:9 00 rn:5 rt:5 \
+!constraints { $rn != 31 && $rn != $rt && $sz < 2 } \
+!memory { align(1 << $sz); reg_plus_imm($rn, $imm); }
+
+@
